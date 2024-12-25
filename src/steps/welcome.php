@@ -1,18 +1,18 @@
 <div class="welcome-step">
     <h2>Welcome to Pick'n'Light Setup</h2>
-    <p>This wizard will guide you through the installation and configuration of your Pick'n'Light system.</p>
     
-    <h3>Before you begin, please ensure you have:</h3>
-    <ul>
-        <li>Docker and Docker Compose installed</li>
-        <li>MQTT Broker ready</li>
-        <li>ViolentMonkey Browser Extension installed</li>
-        <li>ESP32 or ESP8266 with WLED</li>
-        <li>WS2812B LED Strip</li>
-        <li>Part Magazine</li>
-    </ul>
+    <div class="welcome-content">
+        <p>This wizard will help you set up your Pick'n'Light system.</p>
+        <p>The following components will be installed:</p>
+        <ul>
+            <li>Node-RED for flow management</li>
+            <li>Part-DB for inventory management</li>
+            <li>MariaDB as database backend</li>
+        </ul>
+        <p>Please make sure you have Docker installed and running before continuing.</p>
+    </div>
 
     <div class="button-group">
-        <button class="button next-step" onclick="nextStep()">Begin Setup</button>
+        <button class="button next" onclick="navigateToStep('nodered')">Begin Setup</button>
     </div>
 </div> 

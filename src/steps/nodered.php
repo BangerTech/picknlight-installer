@@ -116,7 +116,7 @@ async function installNodeRed() {
         }
         updateStatus(2, 'success');
         
-        // Installation erfolgreich
+        // Setup erfolgreich
         showSuccess('Node-RED was successfully installed!');
         document.querySelector('.button.install').style.display = 'none';
         document.querySelector('.button.next').style.display = 'inline-block';

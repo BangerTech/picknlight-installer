@@ -1,4 +1,13 @@
-const stepOrder = ['welcome', 'nodered', 'partdb', 'mariadb', 'database', 'finish'];
+function getCurrentStep() {
+    // Hole den aktuellen Schritt aus der URL
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('step') || 'welcome';
+}
+
+function navigateToStep(step) {
+    // Navigiere zum angegebenen Schritt
+    window.location.href = `index.php?step=${step}`;
+}
 
 function nextStep() {
     const currentStep = getCurrentStep();

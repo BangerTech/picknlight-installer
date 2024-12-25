@@ -1,10 +1,8 @@
 <?php
 session_start();
 
-// Initialize setup step if not set
-if (!isset($_SESSION['setup_step'])) {
-    $_SESSION['setup_step'] = 1;
-}
+// Get current step from URL parameter or default to 'welcome'
+$current_step = $_GET['step'] ?? 'welcome';
 
 $steps = [
     'welcome' => ['title' => 'Welcome', 'file' => 'steps/welcome.php'],
@@ -15,7 +13,11 @@ $steps = [
     'finish' => ['title' => 'Finish', 'file' => 'steps/finish.php']
 ];
 
-$current_step = $_SESSION['setup_step'];
+// Validate current step
+if (!isset($steps[$current_step])) {
+    $current_step = 'welcome';
+}
+
 $step_data = $steps[$current_step];
 ?>
 
@@ -34,9 +36,20 @@ $step_data = $steps[$current_step];
         </div>
         
         <div class="progress-bar">
-            <?php foreach ($steps as $num => $step): ?>
-                <div class="step <?php echo $num == $current_step ? 'active' : ($num < $current_step ? 'completed' : ''); ?>">
-                    <?php echo $step['title']; ?>
+            <?php 
+            $stepOrder = ['welcome', 'nodered', 'partdb', 'mariadb', 'database', 'finish'];
+            $currentIndex = array_search($current_step, $stepOrder);
+            
+            foreach ($stepOrder as $index => $step): 
+                $stepClass = '';
+                if ($step === $current_step) {
+                    $stepClass = 'active';
+                } elseif ($index < $currentIndex) {
+                    $stepClass = 'completed';
+                }
+            ?>
+                <div class="step <?php echo $stepClass; ?>">
+                    <?php echo $steps[$step]['title']; ?>
                 </div>
             <?php endforeach; ?>
         </div>
@@ -45,7 +58,12 @@ $step_data = $steps[$current_step];
             <?php include $step_data['file']; ?>
         </div>
     </div>
+    
+    <script>
+        // Definiere die Schritte global für die Navigation
+        const stepOrder = <?php echo json_encode($stepOrder); ?>;
+    </script>
+    <script src="js/navigation.js"></script>
     <script src="js/setup.js"></script>
-    <script src="js/database-setup.js"></script>
 </body>
 </html> 

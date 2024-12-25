@@ -3,14 +3,21 @@
     
     <form id="mariadbForm" class="setup-form">
         <div class="form-group">
-            <label for="rootPassword">Root Password</label>
+            <label for="rootPassword">MariaDB Root Password</label>
             <input type="password" id="rootPassword" name="rootPassword" 
                    value="root" class="form-control">
             <small class="form-text">Password for the MariaDB root user</small>
         </div>
 
         <div class="form-group">
-            <label for="dbPort">Port (default: 3306)</label>
+            <label for="dbPassword">Database User Password</label>
+            <input type="password" id="dbPassword" name="dbPassword" 
+                   value="root" class="form-control">
+            <small class="form-text">Password for the Part-DB database user</small>
+        </div>
+
+        <div class="form-group">
+            <label for="dbPort">MariaDB Port (default: 3306)</label>
             <input type="number" id="dbPort" name="dbPort" 
                    value="3306" class="form-control">
             <small class="form-text">Local port for MariaDB access</small>
@@ -44,6 +51,30 @@
 </div>
 
 <script>
+async function updateStatus(step, status, message = null) {
+    const statusSteps = document.querySelectorAll('.status-step');
+    const statusStep = statusSteps[step];
+    const icon = statusStep.querySelector('.status-icon');
+    
+    if (message) {
+        statusStep.querySelector('.status-text').textContent = message;
+    }
+    
+    switch (status) {
+        case 'pending':
+            icon.textContent = '⏳';
+            break;
+        case 'success':
+            icon.textContent = '✅';
+            break;
+        case 'error':
+            icon.textContent = '❌';
+            break;
+        default:
+            icon.textContent = '⭕';
+    }
+}
+
 async function setupMariaDB() {
     try {
         // Setup-Status anzeigen
@@ -114,5 +145,27 @@ async function setupMariaDB() {
             }
         }
     }
+}
+
+function showSuccess(message) {
+    const successDiv = document.createElement('div');
+    successDiv.className = 'success-message';
+    successDiv.textContent = message;
+    
+    // Entferne vorherige Nachrichten
+    document.querySelectorAll('.success-message, .error-message').forEach(el => el.remove());
+    
+    document.querySelector('.button-group').before(successDiv);
+}
+
+function showError(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message';
+    errorDiv.textContent = message;
+    
+    // Entferne vorherige Nachrichten
+    document.querySelectorAll('.success-message, .error-message').forEach(el => el.remove());
+    
+    document.querySelector('.button-group').before(errorDiv);
 }
 </script> 

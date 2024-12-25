@@ -21,11 +21,11 @@ services:
       - --innodb_log_file_size=64M
       - --max_allowed_packet=128M
     healthcheck:
-      test: ["CMD-SHELL", "mysql -uroot -p{{ROOT_PASSWORD}} -e 'SELECT 1' || exit 1"]
+      test: ["CMD", "mysqladmin", "ping", "-u", "root", "-p{{ROOT_PASSWORD}}", "--silent"]
       start_period: 30s
       interval: 5s
       timeout: 5s
-      retries: 3
+      retries: 5
     networks:
       - picknlight
 

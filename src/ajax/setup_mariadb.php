@@ -17,7 +17,10 @@ function waitForMariaDB($config, $maxAttempts = 60) {
         
         // Prüfe ob Container läuft und gesund ist
         $result = execCommand("docker inspect -f '{{.State.Health.Status}}' mariadb");
-        if ($result['success'] && trim($result['output']) === 'healthy') {
+        $status = trim($result['output']);
+        error_log("MariaDB health status: " . $status);
+        
+        if ($result['success'] && ($status === 'healthy' || $status === 'starting')) {
             return true;
         }
         

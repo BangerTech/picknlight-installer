@@ -1,7 +1,0 @@
-{
-    "useTraefik": false,
-    "domain": "",
-    "port": "8034",
-    "instanceName": "Pick'n'Light",
-    "defaultLang": "de"
-}

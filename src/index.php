@@ -48,59 +48,5 @@ $step_data = $steps[$current_step];
     </div>
     <script src="js/setup.js"></script>
     <script src="js/database-setup.js"></script>
-    <script>
-    // Führe nur den aktuellen Schritt aus
-    window.addEventListener('load', async () => {
-        const currentStep = <?php echo $current_step; ?>;
-        console.log('Current step:', currentStep);
-        
-        // Nur für die Datenbankschritte
-        if (currentStep === 3) { // Node-RED Setup
-            await setupNodeRed();
-        } else if (currentStep === 4) { // Part-DB Setup
-            await setupPartDB();
-        } else if (currentStep === 5) { // Database Configuration
-            try {
-                // MariaDB Setup
-                console.log('Setting up MariaDB...');
-                if (!await setupMariaDB()) {
-                    console.error('MariaDB setup failed');
-                    return;
-                }
-                
-                // Database Setup
-                console.log('Creating database...');
-                if (!await setupDatabase()) {
-                    console.error('Database creation failed');
-                    return;
-                }
-                
-                // Table Setup
-                console.log('Creating table...');
-                if (!await setupTable()) {
-                    console.error('Table creation failed');
-                    return;
-                }
-                
-                console.log('Database setup complete!');
-                nextStep();
-            } catch (error) {
-                console.error('Setup error:', error);
-            }
-        } else if (currentStep === 6) { // Trigger Setup
-            try {
-                console.log('Setting up triggers...');
-                if (await setupTriggers()) {
-                    console.log('Trigger setup complete!');
-                    nextStep();
-                } else {
-                    console.error('Trigger setup failed');
-                }
-            } catch (error) {
-                console.error('Trigger setup error:', error);
-            }
-        }
-    });
-    </script>
 </body>
 </html> 

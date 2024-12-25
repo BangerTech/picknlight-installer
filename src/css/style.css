@@ -231,4 +231,21 @@ body {
 .status.complete .spinner,
 .status.error .spinner {
     display: none;
+}
+
+.success-message {
+    background-color: #dff0d8;
+    color: #3c763d;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 4px;
+    border: 1px solid #d6e9c6;
+}
+
+.button.save {
+    background-color: #5cb85c;
+}
+
+.button.save:hover {
+    background-color: #449d44;
 } 

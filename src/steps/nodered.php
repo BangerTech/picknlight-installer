@@ -23,7 +23,7 @@
         </div>
     </form>
 
-    <div id="step-nodered" class="step-status">
+    <div id="step-nodered" class="step-status" style="display: none;">
         <div class="status">
             <span class="status-text">Pending...</span>
             <div class="spinner"></div>
@@ -32,7 +32,8 @@
 
     <div class="button-group">
         <button class="button previous" onclick="previousStep()">Back</button>
-        <button class="button next" onclick="saveNodeRedConfig()">Next</button>
+        <button class="button save" onclick="saveNodeRedConfig()">Save Configuration</button>
+        <button class="button next" onclick="startNodeRed()" style="display: none;">Start Node-RED</button>
     </div>
 </div>
 
@@ -44,58 +45,56 @@ document.getElementById('useTraefik').addEventListener('change', function() {
 
 async function saveNodeRedConfig() {
     try {
-        // Zeige Status an
-        const statusElement = document.querySelector('#step-nodered .status-text');
-        if (statusElement) {
-            statusElement.textContent = 'Saving configuration...';
-        }
-
-        // 1. Speichere die Konfiguration
         const formData = new FormData(document.getElementById('noderedForm'));
-        const saveResponse = await fetch('ajax/save_nodered_config.php', {
+        const response = await fetch('ajax/save_nodered_config.php', {
             method: 'POST',
             body: formData
         });
         
-        if (!saveResponse.ok) {
-            throw new Error(`HTTP error! status: ${saveResponse.status}`);
+        const data = await response.json();
+        if (data.success) {
+            showSuccess('Configuration saved successfully');
+            document.querySelector('.button.save').style.display = 'none';
+            document.querySelector('.button.next').style.display = 'inline-block';
+        } else {
+            showError(data.error || 'Failed to save configuration');
         }
-        
-        const saveData = await saveResponse.json();
-        if (!saveData.success) {
-            throw new Error(saveData.error || 'Failed to save configuration');
-        }
-
-        // 2. Starte den Container
-        console.log('Configuration saved, starting Node-RED...');
-        const setupResponse = await fetch('ajax/setup_nodered.php');
-        
-        if (!setupResponse.ok) {
-            throw new Error(`HTTP error! status: ${setupResponse.status}`);
-        }
-        
-        const setupData = await setupResponse.json();
-        if (!setupData.success) {
-            throw new Error(setupData.error || 'Failed to setup Node-RED');
-        }
-
-        // 3. Wenn alles erfolgreich war, gehe zum nächsten Schritt
-        console.log('Node-RED setup complete');
-        nextStep();
     } catch (error) {
         console.error('Error:', error);
         showError(error.message);
-        
-        // Zeige Fehler im Status an
-        const statusElement = document.querySelector('#step-nodered .status-text');
-        if (statusElement) {
-            statusElement.textContent = 'Error: ' + error.message;
-        }
-        const statusDiv = document.querySelector('#step-nodered .status');
-        if (statusDiv) {
-            statusDiv.classList.remove('pending');
-            statusDiv.classList.add('error');
-        }
     }
+}
+
+async function startNodeRed() {
+    try {
+        const statusElement = document.getElementById('step-nodered');
+        statusElement.style.display = 'block';
+        
+        const response = await fetch('ajax/setup_nodered.php');
+        const data = await response.json();
+        
+        if (data.success) {
+            showSuccess('Node-RED started successfully');
+            nextStep();
+        } else {
+            showError(data.error || 'Failed to start Node-RED');
+            statusElement.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showError(error.message);
+        document.getElementById('step-nodered').style.display = 'none';
+    }
+}
+
+function showSuccess(message) {
+    const successDiv = document.createElement('div');
+    successDiv.className = 'success-message';
+    successDiv.textContent = message;
+    
+    // Entferne vorherige Nachrichten
+    document.querySelectorAll('.success-message, .error-message').forEach(el => el.remove());
+    
+    document.querySelector('.button-group').before(successDiv);
 }
 </script> 

@@ -24,8 +24,7 @@ try {
     
     // Erstelle benötigte Verzeichnisse
     $directories = [
-        "$configDir/nodered/data",
-        "$configDir/nodered/ssh"
+        "$configDir/nodered/data"
     ];
     
     foreach ($directories as $dir) {
@@ -35,15 +34,25 @@ try {
                 throw new Exception("Failed to create directory: $dir");
             }
         }
-        // Setze Berechtigungen
+        
+        // Setze Berechtigungen für den node-red Benutzer (UID 1000)
+        $result = execCommand("chown -R 1000:1000 $dir");
+        if (!$result['success']) {
+            error_log("Warning: Failed to set permissions on $dir: " . $result['output']);
+        }
+        
+        // Setze volle Berechtigungen
         chmod($dir, 0777);
-        // Berechtigungen nur setzen wenn möglich
-        if (function_exists('posix_getuid')) {
-            $processUser = posix_getuid();
-            if ($processUser === 0) { // Nur als root ausführen
-                chown($dir, 1000);
-                chgrp($dir, 1000);
-            }
+        
+        // Setze Berechtigungen für alle Unterverzeichnisse und Dateien
+        $result = execCommand("find $dir -type d -exec chmod 777 {} \;");
+        if (!$result['success']) {
+            error_log("Warning: Failed to set directory permissions in $dir: " . $result['output']);
+        }
+        
+        $result = execCommand("find $dir -type f -exec chmod 666 {} \;");
+        if (!$result['success']) {
+            error_log("Warning: Failed to set file permissions in $dir: " . $result['output']);
         }
     }
     

@@ -5,6 +5,7 @@ services:
     container_name: nodered
     image: nodered/node-red:latest
     restart: unless-stopped
+    user: "1000:1000"
     environment:
       - TZ=Europe/Berlin
       - NODE_RED_ENABLE_PROJECTS=true
@@ -13,7 +14,6 @@ services:
       - "{{PORT}}:1880"
     volumes:
       - ./nodered/data:/data
-      - ./nodered/ssh:/root/.ssh
     networks:
       - picknlight
     {{TRAEFIK_LABELS}}

@@ -92,14 +92,28 @@ EOT;
     // Warte kurz, bis der Container gestartet ist
     sleep(5);
     
-    // Führe die Datenbank-Migration aus
+    // Führe die Datenbank-Migration aus und erfasse die Ausgabe
     $result = execCommand("docker exec --user=www-data partdb php bin/console doctrine:migrations:migrate --no-interaction");
     if (!$result['success']) {
         error_log("Migration output: " . $result['output']);
         throw new Exception('Failed to initialize database: ' . $result['output']);
     }
     
-    echo json_encode(['success' => true]);
+    // Extrahiere das Passwort aus der Migration-Ausgabe oder setze es zurück
+    $password = 'admin';  // Standardpasswort
+    if (strpos($result['output'], 'Already at the latest version') !== false) {
+        // Migration wurde bereits ausgeführt, setze das Passwort zurück
+        $result = execCommand('printf "yes\nadmin\nadmin\n" | docker exec -i --user=www-data partdb php bin/console partdb:users:set-password admin');
+        if (!$result['success']) {
+            error_log("Password reset output: " . $result['output']);
+            throw new Exception('Failed to reset admin password: ' . $result['output']);
+        }
+    }
+    
+    echo json_encode([
+        'success' => true,
+        'password' => $password  // Gebe das Passwort zurück
+    ]);
 } catch (Exception $e) {
     error_log('Part-DB setup error: ' . $e->getMessage());
     echo json_encode([

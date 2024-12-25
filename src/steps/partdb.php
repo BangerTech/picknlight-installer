@@ -194,7 +194,11 @@ async function installPartDB() {
         updateStatus(3, 'success');
         
         // Installation erfolgreich
-        showSuccess('Part-DB was successfully installed! Default login is admin/admin');
+        if (setupData.password) {
+            showSuccess(`Part-DB was successfully installed! Login credentials:\nUsername: admin\nPassword: ${setupData.password}`);
+        } else {
+            showSuccess('Part-DB was successfully installed! Default login is admin/admin');
+        }
         document.querySelector('.button.install').style.display = 'none';
         document.querySelector('.button.next').style.display = 'inline-block';
         

@@ -33,11 +33,12 @@ try {
     $template = str_replace('{{PORT}}', $config['port'], $template);
 
     if ($config['useTraefik']) {
-        $traefikLabels = "
+        $traefikLabels = <<<EOT
     labels:
-      - traefik.enable=true
-      - traefik.http.routers.nodered.rule=Host(`{$config['domain']}`)
-      - traefik.http.services.nodered.loadbalancer.server.port=1880";
+      - "traefik.enable=true"
+      - "traefik.http.routers.nodered.rule=Host(`{$config['domain']}`)"
+      - "traefik.http.services.nodered.loadbalancer.server.port=1880"
+EOT;
     } else {
         $traefikLabels = '';
     }

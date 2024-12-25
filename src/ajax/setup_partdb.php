@@ -27,10 +27,34 @@ try {
     }
     
     // Part-DB Container erstellen und starten
+    $config = json_decode(file_get_contents($configDir . '/partdb-config.json'), true);
+    
     $template = file_get_contents('../templates/docker-compose-partdb.yml');
-    if ($template === false) {
-        throw new Exception('Could not read Part-DB template file');
+    
+    // Ersetze die Platzhalter
+    $template = str_replace([
+        '{{PORT}}',
+        '{{INSTANCE_NAME}}',
+        '{{LANG}}'
+    ], [
+        $config['port'],
+        $config['instanceName'],
+        $config['defaultLang']
+    ], $template);
+    
+    // Füge Traefik-Labels hinzu wenn aktiviert
+    if ($config['useTraefik']) {
+        $traefikLabels = <<<EOT
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.partdb.rule=Host(`{$config['domain']}`)"
+      - "traefik.http.services.partdb.loadbalancer.server.port=80"
+EOT;
+    } else {
+        $traefikLabels = '';
     }
+    
+    $template = str_replace('{{TRAEFIK_LABELS}}', $traefikLabels, $template);
     
     $partdbConfig = $configDir . '/docker-compose-partdb.yml';
     if (file_put_contents($partdbConfig, $template) === false) {

@@ -24,7 +24,7 @@ services:
       - ./partdb/uploads:/var/www/html/uploads
     networks:
       - picknlight
-    {{TRAEFIK_LABELS}}
+{{TRAEFIK_LABELS}}
 
 networks:
   picknlight:

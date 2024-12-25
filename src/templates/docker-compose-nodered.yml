@@ -16,10 +16,7 @@ services:
       - ./nodered/ssh:/root/.ssh
     networks:
       - picknlight
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.nodered.rule=Host(`nodered.local`)"
-      - "traefik.http.services.nodered.loadbalancer.server.port=1880"
+    {{TRAEFIK_LABELS}}
 
 networks:
   picknlight:

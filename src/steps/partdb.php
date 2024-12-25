@@ -1,45 +1,72 @@
-<div class="step" id="step-partdb">
-    <h3>4. Part-DB Setup</h3>
-    <p>Setting up Part-DB container...</p>
-    <div class="status">
-        <span class="status-text">Pending...</span>
-        <div class="spinner"></div>
+<div class="partdb-step">
+    <h2>Part-DB Configuration</h2>
+    
+    <form id="partdbForm" class="setup-form">
+        <div class="form-group">
+            <label for="useTraefik">Use Traefik Reverse Proxy?</label>
+            <select id="useTraefik" name="useTraefik" class="form-control">
+                <option value="0">No (Local Access Only)</option>
+                <option value="1">Yes (With Traefik)</option>
+            </select>
+        </div>
+
+        <div class="form-group traefik-options" style="display: none;">
+            <label for="partdbDomain">Part-DB Domain</label>
+            <input type="text" id="partdbDomain" name="partdbDomain" 
+                   placeholder="partdb.yourdomain.com" class="form-control">
+        </div>
+
+        <div class="form-group">
+            <label for="partdbPort">Local Port (default: 8034)</label>
+            <input type="number" id="partdbPort" name="partdbPort" 
+                   value="8034" class="form-control">
+        </div>
+
+        <div class="form-group">
+            <label for="instanceName">Instance Name</label>
+            <input type="text" id="instanceName" name="instanceName" 
+                   value="Pick'n'Light" class="form-control">
+        </div>
+
+        <div class="form-group">
+            <label for="defaultLang">Default Language</label>
+            <select id="defaultLang" name="defaultLang" class="form-control">
+                <option value="de">Deutsch</option>
+                <option value="en">English</option>
+            </select>
+        </div>
+    </form>
+
+    <div class="button-group">
+        <button class="button previous" onclick="previousStep()">Back</button>
+        <button class="button next" onclick="savePartDBConfig()">Next</button>
     </div>
 </div>
 
 <script>
-async function setupPartDB() {
+document.getElementById('useTraefik').addEventListener('change', function() {
+    const traefikOptions = document.querySelector('.traefik-options');
+    traefikOptions.style.display = this.value === '1' ? 'block' : 'none';
+});
+
+async function savePartDBConfig() {
     try {
-        console.log('Starting Part-DB setup...');
-        updateStepStatus('partdb', 'pending');
-        
-        // Erstelle und starte den Part-DB Container
-        const response = await fetch('/ajax/setup_partdb.php');
-        console.log('Part-DB setup response:', response);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
+        const formData = new FormData(document.getElementById('partdbForm'));
+        const response = await fetch('ajax/save_partdb_config.php', {
+            method: 'POST',
+            body: formData
+        });
         const data = await response.json();
-        console.log('Part-DB setup data:', data);
         
         if (data.success) {
-            console.log('Part-DB setup successful');
-            updateStepStatus('partdb', 'complete');
+            await setupPartDB();
             nextStep();
-            return true;
         } else {
-            console.error('Part-DB setup failed:', data.error);
-            updateStepStatus('partdb', 'error', data.error || 'Failed to setup Part-DB');
-            return false;
+            showError(data.error || 'Failed to save configuration');
         }
     } catch (error) {
-        console.error('Error setting up Part-DB:', error);
-        updateStepStatus('partdb', 'error', 'Network error while setting up Part-DB');
-        return false;
+        console.error('Error:', error);
+        showError(error.message);
     }
 }
-
-window.setupPartDB = setupPartDB;
 </script> 

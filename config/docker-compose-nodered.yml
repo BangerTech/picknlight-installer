@@ -13,12 +13,12 @@ services:
       - NODE_RED_UID=1000
       - NODE_RED_GID=1000
     ports:
-      - "{{PORT}}:1880"
+      - "8035:1880"
     volumes:
       - ./nodered/data:/data
     networks:
       - picknlight
-    {{TRAEFIK_LABELS}}
+    
 
 networks:
   picknlight:

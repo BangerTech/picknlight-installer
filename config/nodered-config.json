@@ -1,0 +1,5 @@
+{
+    "useTraefik": false,
+    "domain": "",
+    "port": "8035"
+}

@@ -248,4 +248,38 @@ body {
 
 .button.save:hover {
     background-color: #449d44;
+}
+
+.setup-status {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+}
+
+.status-step {
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.status-icon {
+    font-size: 1.2em;
+    width: 24px;
+    text-align: center;
+}
+
+.button.install {
+    background-color: #0275d8;
+}
+
+.button.install:hover {
+    background-color: #025aa5;
+}
+
+.button.install:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
 } 

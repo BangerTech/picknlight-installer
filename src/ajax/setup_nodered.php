@@ -35,25 +35,8 @@ try {
             }
         }
         
-        // Setze Berechtigungen für den node-red Benutzer (UID 1000)
-        $result = execCommand("chown -R 1000:1000 $dir");
-        if (!$result['success']) {
-            error_log("Warning: Failed to set permissions on $dir: " . $result['output']);
-        }
-        
-        // Setze volle Berechtigungen
+        // Setze volle Berechtigungen für das Verzeichnis
         chmod($dir, 0777);
-        
-        // Setze Berechtigungen für alle Unterverzeichnisse und Dateien
-        $result = execCommand("find $dir -type d -exec chmod 777 {} \;");
-        if (!$result['success']) {
-            error_log("Warning: Failed to set directory permissions in $dir: " . $result['output']);
-        }
-        
-        $result = execCommand("find $dir -type f -exec chmod 666 {} \;");
-        if (!$result['success']) {
-            error_log("Warning: Failed to set file permissions in $dir: " . $result['output']);
-        }
     }
     
     // Node-RED Container erstellen und starten

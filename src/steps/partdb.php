@@ -59,7 +59,7 @@
     <div class="button-group">
         <button class="button previous" onclick="previousStep()">Back</button>
         <button class="button install" onclick="installPartDB()">Install Part-DB</button>
-        <button class="button next" onclick="nextStep()" style="display: none;">Continue</button>
+        <button class="button next" onclick="navigateToStep('mariadb')" style="display: none;">Continue</button>
     </div>
 </div>
 

@@ -41,7 +41,7 @@
     <div class="button-group">
         <button class="button previous" onclick="previousStep()">Back</button>
         <button class="button install" onclick="installNodeRed()">Install Node-RED</button>
-        <button class="button next" onclick="nextStep()" style="display: none;">Continue</button>
+        <button class="button next" onclick="navigateToStep('partdb')" style="display: none;">Continue</button>
     </div>
 </div>
 

@@ -37,6 +37,13 @@
         </div>
     </form>
 
+    <div id="step-partdb" class="step-status">
+        <div class="status">
+            <span class="status-text">Pending...</span>
+            <div class="spinner"></div>
+        </div>
+    </div>
+
     <div class="button-group">
         <button class="button previous" onclick="previousStep()">Back</button>
         <button class="button next" onclick="savePartDBConfig()">Next</button>

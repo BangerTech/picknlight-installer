@@ -67,36 +67,27 @@ function saveNodeRedConfig() {
     });
 }
 
-function updateStepStatus(step, status, error = '') {
-    console.log(`Updating step ${step} to status ${status}`);
-    const stepElement = document.getElementById(`step-${step}`);
+function updateStepStatus(stepId, status, message = '') {
+    console.log(`Updating step ${stepId} to status ${status}`);
+    
+    const stepElement = document.querySelector(`#step-${stepId}`);
     if (!stepElement) {
-        console.error(`Step element not found: step-${step}`);
+        console.warn(`Step element not found: step-${stepId}`);
         return;
     }
-
-    const statusElement = stepElement.querySelector('.status');
-    const statusText = statusElement.querySelector('.status-text');
-    const spinner = statusElement.querySelector('.spinner');
-
-    // Entferne alle Status-Klassen
-    stepElement.classList.remove('pending', 'complete', 'error');
     
-    // Füge neue Status-Klasse hinzu
-    stepElement.classList.add(status);
-
-    switch (status) {
-        case 'complete':
-            statusText.textContent = 'Complete';
-            spinner.style.display = 'none';
-            break;
-        case 'error':
-            statusText.textContent = error || 'Error';
-            spinner.style.display = 'none';
-            break;
-        case 'pending':
-            statusText.textContent = 'Pending...';
-            spinner.style.display = 'block';
-            break;
+    const statusElement = stepElement.querySelector('.status');
+    if (!statusElement) {
+        console.warn(`Status element not found in step ${stepId}`);
+        return;
     }
+    
+    const statusTextElement = statusElement.querySelector('.status-text');
+    if (statusTextElement) {
+        statusTextElement.textContent = message || status;
+    }
+    
+    // Entferne alte Status-Klassen
+    statusElement.classList.remove('pending', 'complete', 'error');
+    statusElement.classList.add(status);
 } 

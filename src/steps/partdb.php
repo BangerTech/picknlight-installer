@@ -149,7 +149,7 @@ async function installPartDB() {
         
         // 3. Container-Status prüfen
         updateStatus(2, 'pending', 'Waiting for services to start...');
-        await new Promise(resolve => setTimeout(resolve, 10000)); // Warte 10 Sekunden
+        await new Promise(resolve => setTimeout(resolve, 5000)); // Warte 5 Sekunden
         const checkResponse = await fetch('ajax/check_partdb.php');
         
         if (!checkResponse.ok) {
@@ -170,8 +170,31 @@ async function installPartDB() {
         }
         updateStatus(2, 'success');
         
+        // 4. Datenbank-Initialisierung prüfen
+        updateStatus(3, 'pending', 'Waiting for database initialization...');
+        await new Promise(resolve => setTimeout(resolve, 5000)); // Warte 5 Sekunden
+        const initResponse = await fetch('ajax/check_partdb.php');
+        
+        if (!initResponse.ok) {
+            throw new Error(`HTTP error! status: ${initResponse.status}`);
+        }
+        
+        let initData;
+        try {
+            initData = await initResponse.json();
+        } catch (e) {
+            const text = await initResponse.text();
+            console.error('Invalid JSON response:', text);
+            throw new Error('Server returned invalid JSON');
+        }
+        
+        if (!initData.success) {
+            throw new Error(initData.error || 'Failed to initialize database');
+        }
+        updateStatus(3, 'success');
+        
         // Installation erfolgreich
-        showSuccess('Part-DB was successfully installed!');
+        showSuccess('Part-DB was successfully installed! Default login is admin/admin');
         document.querySelector('.button.install').style.display = 'none';
         document.querySelector('.button.next').style.display = 'inline-block';
         

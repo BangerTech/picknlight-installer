@@ -83,7 +83,7 @@ EOT;
         throw new Exception('Failed to create Docker network: ' . $result['output']);
     }
     
-    // Starte die Container
+    // Starte den Container
     $result = execCommand("cd $configDir && docker compose -f docker-compose-partdb.yml up -d");
     if (!$result['success']) {
         throw new Exception('Failed to start Part-DB: ' . $result['output']);
@@ -92,7 +92,7 @@ EOT;
     // Warte kurz, bis der Container gestartet ist
     sleep(5);
     
-    // Führe die Datenbank-Migration aus und erstelle den Admin-Benutzer
+    // Führe die Datenbank-Migration aus
     $result = execCommand("docker exec --user=www-data partdb php bin/console doctrine:migrations:migrate --no-interaction");
     if (!$result['success']) {
         error_log("Migration output: " . $result['output']);

@@ -30,7 +30,7 @@ try {
     }
     
     // Versuche eine Verbindung
-    $result = execCommand("docker exec mariadb mysqladmin ping -u root -p{$config['root_password']} --silent");
+    $result = execCommand("docker exec mariadb mariadb -u root -p{$config['root_password']} -e 'SELECT 1;'");
     if (!$result['success']) {
         throw new Exception('Could not connect to MariaDB: ' . $result['output']);
     }

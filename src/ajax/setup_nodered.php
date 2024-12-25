@@ -18,6 +18,16 @@ function execCommand($command) {
     ];
 }
 
+function ensureNetworkExists() {
+    $result = execCommand("docker network ls --filter name=picknlight --format '{{.Name}}'");
+    if (empty($result['output'])) {
+        $result = execCommand("docker network create picknlight");
+        if (!$result['success']) {
+            throw new Exception('Failed to create Docker network: ' . $result['output']);
+        }
+    }
+}
+
 try {
     $configDir = getenv('CONFIG_DIR') ?: '/app/config';
     error_log("Config dir: $configDir");
@@ -83,10 +93,7 @@ EOT;
     }
     
     // Stelle sicher, dass das Docker-Netzwerk existiert
-    $result = execCommand("docker network inspect picknlight >/dev/null 2>&1 || docker network create picknlight");
-    if (!$result['success']) {
-        throw new Exception('Failed to create Docker network: ' . $result['output']);
-    }
+    ensureNetworkExists();
     
     $result = execCommand("cd $configDir && docker compose -f docker-compose-nodered.yml up -d");
     if (!$result['success']) {

@@ -9,12 +9,12 @@ services:
       - NODE_RED_ENABLE_PROJECTS=true
       - NODE_RED_ENABLE_SAFE_MODE=false
     ports:
-      - "{{PORT}}:1880"
+      - "8035:1880"
     volumes:
       - ./nodered/data:/data
     networks:
       - picknlight
-    {{TRAEFIK_LABELS}}
+    
 
 networks:
   picknlight:

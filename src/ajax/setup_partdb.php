@@ -92,18 +92,11 @@ EOT;
     // Warte kurz, bis der Container gestartet ist
     sleep(5);
     
-    // Führe die Datenbank-Migration aus
-    $result = execCommand("docker exec partdb php bin/console doctrine:migrations:migrate --no-interaction");
+    // Führe die Datenbank-Migration aus und erstelle den Admin-Benutzer
+    $result = execCommand("docker exec --user=www-data partdb php bin/console doctrine:migrations:migrate --no-interaction");
     if (!$result['success']) {
         error_log("Migration output: " . $result['output']);
         throw new Exception('Failed to initialize database: ' . $result['output']);
-    }
-    
-    // Erstelle den Admin-Benutzer und setze das Passwort
-    $result = execCommand('docker exec partdb php bin/console app:set-password admin admin --no-interaction');
-    if (!$result['success']) {
-        error_log("User creation output: " . $result['output']);
-        throw new Exception('Failed to create admin user: ' . $result['output']);
     }
     
     echo json_encode(['success' => true]);

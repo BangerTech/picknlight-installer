@@ -15,20 +15,13 @@ function waitForMariaDB($config, $maxAttempts = 60) {
     for ($i = 1; $i <= $maxAttempts; $i++) {
         error_log("Waiting for MariaDB... Attempt $i of $maxAttempts");
         
-        // Prüfe ob Container läuft
-        $result = execCommand("docker ps --filter 'name=mariadb' --format '{{.Status}}'");
-        if (!$result['success'] || empty($result['output'])) {
-            sleep(1);
-            continue;
-        }
-        
-        // Versuche eine Verbindung zur Datenbank
-        $result = execCommand("docker exec mariadb mysqladmin ping -h localhost -u root -p{$config['root_password']} --silent");
-        if ($result['success']) {
+        // Prüfe ob Container läuft und gesund ist
+        $result = execCommand("docker inspect -f '{{.State.Health.Status}}' mariadb");
+        if ($result['success'] && trim($result['output']) === 'healthy') {
             return true;
         }
         
-        sleep(1);
+        sleep(2);
     }
     return false;
 }
@@ -40,20 +33,6 @@ try {
     $config = json_decode(file_get_contents("$configDir/mariadb-config.json"), true);
     if ($config === null) {
         throw new Exception('Failed to load configuration');
-    }
-    
-    // Erstelle Verzeichnisse
-    $directories = [
-        "$configDir/mariadb/data"
-    ];
-    
-    foreach ($directories as $dir) {
-        if (!file_exists($dir)) {
-            if (!mkdir($dir, 0777, true)) {
-                throw new Exception("Failed to create directory: $dir");
-            }
-        }
-        chmod($dir, 0777);
     }
     
     // Erstelle docker-compose.yml

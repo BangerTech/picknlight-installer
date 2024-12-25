@@ -7,13 +7,12 @@ if (!isset($_SESSION['setup_step'])) {
 }
 
 $steps = [
-    1 => ['title' => 'Welcome', 'file' => 'steps/welcome.php'],
-    2 => ['title' => 'System Requirements', 'file' => 'steps/requirements.php'],
-    3 => ['title' => 'Node-RED Setup', 'file' => 'steps/nodered.php'],
-    4 => ['title' => 'Part-DB Setup', 'file' => 'steps/partdb.php'],
-    5 => ['title' => 'Database Configuration', 'file' => 'steps/database.php'],
-    6 => ['title' => 'Trigger Setup', 'file' => 'steps/triggers.php'],
-    7 => ['title' => 'Final Configuration', 'file' => 'steps/final.php']
+    'welcome' => ['title' => 'Welcome', 'file' => 'steps/welcome.php'],
+    'nodered' => ['title' => 'Node-RED', 'file' => 'steps/nodered.php'],
+    'partdb' => ['title' => 'Part-DB', 'file' => 'steps/partdb.php'],
+    'mariadb' => ['title' => 'MariaDB', 'file' => 'steps/mariadb.php'],
+    'database' => ['title' => 'Database', 'file' => 'steps/database.php'],
+    'finish' => ['title' => 'Finish', 'file' => 'steps/finish.php']
 ];
 
 $current_step = $_SESSION['setup_step'];

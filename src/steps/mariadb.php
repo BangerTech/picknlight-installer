@@ -1,43 +1,118 @@
-<div class="step" id="step-mariadb">
-    <h3>1. Setting up MariaDB</h3>
-    <p>Creating and configuring MariaDB container...</p>
-    <div class="status">
-        <span class="status-text">Pending...</span>
-        <div class="spinner"></div>
+<div class="mariadb-step">
+    <h2>MariaDB Setup</h2>
+    
+    <form id="mariadbForm" class="setup-form">
+        <div class="form-group">
+            <label for="rootPassword">Root Password</label>
+            <input type="password" id="rootPassword" name="rootPassword" 
+                   value="root" class="form-control">
+            <small class="form-text">Password for the MariaDB root user</small>
+        </div>
+
+        <div class="form-group">
+            <label for="dbPort">Port (default: 3306)</label>
+            <input type="number" id="dbPort" name="dbPort" 
+                   value="3306" class="form-control">
+            <small class="form-text">Local port for MariaDB access</small>
+        </div>
+    </form>
+
+    <div class="setup-status" style="display: none;">
+        <div class="status-step">
+            <span class="status-icon">⭕</span>
+            <span class="status-text">Saving configuration...</span>
+        </div>
+        <div class="status-step">
+            <span class="status-icon">⭕</span>
+            <span class="status-text">Creating directories...</span>
+        </div>
+        <div class="status-step">
+            <span class="status-icon">⭕</span>
+            <span class="status-text">Starting MariaDB...</span>
+        </div>
+        <div class="status-step">
+            <span class="status-icon">⭕</span>
+            <span class="status-text">Checking database connection...</span>
+        </div>
+    </div>
+
+    <div class="button-group">
+        <button class="button previous" onclick="previousStep()">Back</button>
+        <button class="button install" onclick="setupMariaDB()">Install MariaDB</button>
+        <button class="button next" onclick="nextStep()" style="display: none;">Continue</button>
     </div>
 </div>
 
 <script>
 async function setupMariaDB() {
     try {
-        console.log('Starting MariaDB setup...');
-        updateStepStatus('mariadb', 'pending');
+        // Setup-Status anzeigen
+        document.querySelector('.setup-status').style.display = 'block';
+        document.querySelector('.button.install').disabled = true;
         
-        const response = await fetch('/ajax/database_setup.php?step=create_mariadb');
-        console.log('MariaDB setup response:', response);
+        // 1. Konfiguration speichern
+        updateStatus(0, 'pending');
+        const formData = new FormData(document.getElementById('mariadbForm'));
+        const saveResponse = await fetch('ajax/save_mariadb_config.php', {
+            method: 'POST',
+            body: formData
+        });
         
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        if (!saveResponse.ok) {
+            throw new Error(`HTTP error! status: ${saveResponse.status}`);
         }
         
-        const data = await response.json();
-        console.log('MariaDB setup data:', data);
-        
-        if (data.success) {
-            console.log('MariaDB setup successful');
-            updateStepStatus('mariadb', 'complete');
-            return true;
-        } else {
-            console.error('MariaDB setup failed:', data.error);
-            updateStepStatus('mariadb', 'error', data.error || 'Failed to setup MariaDB');
-            return false;
+        let saveData = await saveResponse.json();
+        if (!saveData.success) {
+            throw new Error(saveData.error || 'Failed to save configuration');
         }
+        updateStatus(0, 'success');
+        
+        // 2. Verzeichnisse erstellen
+        updateStatus(1, 'pending');
+        const dirResponse = await fetch('ajax/create_mariadb_dirs.php');
+        let dirData = await dirResponse.json();
+        if (!dirData.success) {
+            throw new Error(dirData.error || 'Failed to create directories');
+        }
+        updateStatus(1, 'success');
+        
+        // 3. MariaDB starten
+        updateStatus(2, 'pending');
+        const setupResponse = await fetch('ajax/setup_mariadb.php');
+        let setupData = await setupResponse.json();
+        if (!setupData.success) {
+            throw new Error(setupData.error || 'Failed to start MariaDB');
+        }
+        updateStatus(2, 'success');
+        
+        // 4. Verbindung prüfen
+        updateStatus(3, 'pending');
+        const checkResponse = await fetch('ajax/check_mariadb.php');
+        let checkData = await checkResponse.json();
+        if (!checkData.success) {
+            throw new Error(checkData.error || 'Failed to connect to MariaDB');
+        }
+        updateStatus(3, 'success');
+        
+        // Setup erfolgreich
+        showSuccess('MariaDB setup completed successfully!');
+        document.querySelector('.button.install').style.display = 'none';
+        document.querySelector('.button.next').style.display = 'inline-block';
+        
     } catch (error) {
-        console.error('Error setting up MariaDB:', error);
-        updateStepStatus('mariadb', 'error', 'Network error while setting up MariaDB');
-        return false;
+        console.error('Error:', error);
+        showError(error.message);
+        document.querySelector('.button.install').disabled = false;
+        
+        // Zeige Fehler im Status an
+        const statusSteps = document.querySelectorAll('.status-step');
+        for (let i = 0; i < statusSteps.length; i++) {
+            const icon = statusSteps[i].querySelector('.status-icon');
+            if (icon.textContent === '⏳') {
+                updateStatus(i, 'error');
+            }
+        }
     }
 }
-
-window.setupMariaDB = setupMariaDB;
 </script> 

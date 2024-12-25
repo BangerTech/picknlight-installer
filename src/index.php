@@ -1,0 +1,106 @@
+<?php
+session_start();
+
+// Initialize setup step if not set
+if (!isset($_SESSION['setup_step'])) {
+    $_SESSION['setup_step'] = 1;
+}
+
+$steps = [
+    1 => ['title' => 'Welcome', 'file' => 'steps/welcome.php'],
+    2 => ['title' => 'System Requirements', 'file' => 'steps/requirements.php'],
+    3 => ['title' => 'Node-RED Setup', 'file' => 'steps/nodered.php'],
+    4 => ['title' => 'Part-DB Setup', 'file' => 'steps/partdb.php'],
+    5 => ['title' => 'Database Configuration', 'file' => 'steps/database.php'],
+    6 => ['title' => 'Trigger Setup', 'file' => 'steps/triggers.php'],
+    7 => ['title' => 'Final Configuration', 'file' => 'steps/final.php']
+];
+
+$current_step = $_SESSION['setup_step'];
+$step_data = $steps[$current_step];
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pick'n'Light Setup - <?php echo $step_data['title']; ?></title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="setup-header">
+            <h1>Pick'n'Light Setup</h1>
+        </div>
+        
+        <div class="progress-bar">
+            <?php foreach ($steps as $num => $step): ?>
+                <div class="step <?php echo $num == $current_step ? 'active' : ($num < $current_step ? 'completed' : ''); ?>">
+                    <?php echo $step['title']; ?>
+                </div>
+            <?php endforeach; ?>
+        </div>
+
+        <div class="content">
+            <?php include $step_data['file']; ?>
+        </div>
+    </div>
+    <script src="js/setup.js"></script>
+    <script src="js/database-setup.js"></script>
+    <script>
+    // Führe nur den aktuellen Schritt aus
+    window.addEventListener('load', async () => {
+        const currentStep = <?php echo $current_step; ?>;
+        console.log('Current step:', currentStep);
+        
+        // Nur für die Datenbankschritte
+        if (currentStep === 3) { // Node-RED Setup
+            await setupNodeRed();
+        } else if (currentStep === 4) { // Part-DB Setup
+            await setupPartDB();
+        } else if (currentStep === 5) { // Database Configuration
+            try {
+                // MariaDB Setup
+                console.log('Setting up MariaDB...');
+                if (!await setupMariaDB()) {
+                    console.error('MariaDB setup failed');
+                    return;
+                }
+                
+                // Database Setup
+                console.log('Creating database...');
+                if (!await setupDatabase()) {
+                    console.error('Database creation failed');
+                    return;
+                }
+                
+                // Table Setup
+                console.log('Creating table...');
+                if (!await setupTable()) {
+                    console.error('Table creation failed');
+                    return;
+                }
+                
+                console.log('Database setup complete!');
+                nextStep();
+            } catch (error) {
+                console.error('Setup error:', error);
+            }
+        } else if (currentStep === 6) { // Trigger Setup
+            try {
+                console.log('Setting up triggers...');
+                if (await setupTriggers()) {
+                    console.log('Trigger setup complete!');
+                    nextStep();
+                } else {
+                    console.error('Trigger setup failed');
+                }
+            } catch (error) {
+                console.error('Trigger setup error:', error);
+            }
+        }
+    });
+    </script>
+</body>
+</html> 

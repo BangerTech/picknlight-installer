@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  nodered:
+    container_name: nodered
+    image: nodered/node-red:latest
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Berlin
+      - NODE_RED_ENABLE_PROJECTS=true
+      - NODE_RED_ENABLE_SAFE_MODE=false
+    ports:
+      - "{{PORT}}:1880"
+    volumes:
+      - ./nodered/data:/data
+      - ./nodered/ssh:/root/.ssh
+    networks:
+      - picknlight
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nodered.rule=Host(`nodered.local`)"
+      - "traefik.http.services.nodered.loadbalancer.server.port=1880"
+
+networks:
+  picknlight:
+    external: true 

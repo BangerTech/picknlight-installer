@@ -1,0 +1,36 @@
+services:
+  mariadb:
+    image: mariadb:latest
+    container_name: mariadb
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD={{ROOT_PASSWORD}}
+      - MYSQL_DATABASE=partdb
+      - MYSQL_USER=partdb
+      - MYSQL_PASSWORD={{DB_PASSWORD}}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    command: 
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-name-resolve
+      - --skip-host-cache
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p{{ROOT_PASSWORD}}"]
+      start_period: 30s
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - picknlight
+
+volumes:
+  mariadb_data:
+    name: picknlight_mariadb_data
+
+networks:
+  picknlight:
+    name: picknlight
+    driver: bridge 

@@ -120,4 +120,73 @@ async function setupTriggers() {
         updateStepStatus('triggers', 'error', 'Network error while importing triggers');
         return false;
     }
-} 
+}
+
+async function setupPartDB() {
+    try {
+        console.log('Starting Part-DB setup...');
+        updateStepStatus('partdb', 'pending');
+        
+        const response = await fetch('/ajax/setup_partdb.php');
+        console.log('Part-DB setup response:', response);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Part-DB setup data:', data);
+        
+        if (data.success) {
+            console.log('Part-DB setup successful');
+            updateStepStatus('partdb', 'complete');
+            return true;
+        } else {
+            console.error('Part-DB setup failed:', data.error);
+            updateStepStatus('partdb', 'error', data.error || 'Failed to setup Part-DB');
+            return false;
+        }
+    } catch (error) {
+        console.error('Error setting up Part-DB:', error);
+        updateStepStatus('partdb', 'error', 'Network error while setting up Part-DB');
+        return false;
+    }
+}
+
+async function setupNodeRed() {
+    try {
+        console.log('Starting Node-RED setup...');
+        updateStepStatus('nodered', 'pending');
+        
+        const response = await fetch('/ajax/setup_nodered.php');
+        console.log('Node-RED setup response:', response);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Node-RED setup data:', data);
+        
+        if (data.success) {
+            console.log('Node-RED setup successful');
+            updateStepStatus('nodered', 'complete');
+            return true;
+        } else {
+            console.error('Node-RED setup failed:', data.error);
+            updateStepStatus('nodered', 'error', data.error || 'Failed to setup Node-RED');
+            return false;
+        }
+    } catch (error) {
+        console.error('Error setting up Node-RED:', error);
+        updateStepStatus('nodered', 'error', 'Network error while setting up Node-RED');
+        return false;
+    }
+}
+
+window.setupMariaDB = setupMariaDB;
+window.setupDatabase = setupDatabase;
+window.setupTable = setupTable;
+window.setupTriggers = setupTriggers;
+window.setupPartDB = setupPartDB;
+window.setupNodeRed = setupNodeRed; 

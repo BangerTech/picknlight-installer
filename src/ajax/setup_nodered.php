@@ -24,6 +24,10 @@ try {
                 throw new Exception("Failed to create directory: $dir");
             }
         }
+        // Setze Berechtigungen
+        chmod($dir, 0777);
+        chown($dir, 1000);  // node-red user
+        chgrp($dir, 1000);  // node-red group
     }
     
     // Node-RED Container erstellen und starten

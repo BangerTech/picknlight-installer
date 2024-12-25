@@ -10,15 +10,15 @@ services:
       - APP_SECRET=!ChangeMe!
       - TRUSTED_PROXIES=127.0.0.1,REMOTE_ADDR
       - DATABASE_URL=mysql://root:root@mariadb:3306/partdb
-      - INSTANCE_NAME=
-      - DEFAULT_LANG=
+      - INSTANCE_NAME=Pick'n'Light
+      - DEFAULT_LANG=de
       - TZ=Europe/Berlin
       - BASE_CURRENCY=EUR
       - ALLOW_ATTACHMENT_DOWNLOADS=0
       - USE_GRAVATAR=0
       - BANNER=Pick'n'Light<br>This will get you sorted
     ports:
-      - ":80"
+      - "8034:80"
     volumes:
       - ./partdb/data:/var/www/html/public/media
       - ./partdb/uploads:/var/www/html/uploads

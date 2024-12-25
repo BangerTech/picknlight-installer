@@ -21,7 +21,7 @@ function waitForMariaDB($config, $maxAttempts = 60) {
             return true;
         }
         
-        sleep(2);
+        sleep(5);
     }
     return false;
 }

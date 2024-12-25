@@ -21,9 +21,9 @@ services:
       - --innodb_log_file_size=64M
       - --max_allowed_packet=128M
     healthcheck:
-      test: ["CMD", "/usr/bin/mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p{{ROOT_PASSWORD}}"]
+      test: ["CMD-SHELL", "mysql -uroot -p{{ROOT_PASSWORD}} -e 'SELECT 1' || exit 1"]
       start_period: 30s
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 3
     networks:

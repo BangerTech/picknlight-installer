@@ -1,76 +1,47 @@
 <div class="database-step">
-    <h2>Database Configuration</h2>
+    <h2>Database Setup</h2>
     
-    <form id="dbForm" class="setup-form">
-        <div class="form-group">
-            <label for="rootPassword">MariaDB Root Password</label>
-            <input type="password" id="rootPassword" name="rootPassword" 
-                   value="root" class="form-control">
-            <small class="form-text">Password for the MariaDB root user</small>
-        </div>
-
-        <div class="form-group">
-            <label for="dbPassword">Database User Password</label>
-            <input type="password" id="dbPassword" name="dbPassword" 
-                   value="root" class="form-control">
-            <small class="form-text">Password for the Part-DB database user</small>
-        </div>
-
-        <div class="form-group">
-            <label for="dbPort">MariaDB Port (default: 3306)</label>
-            <input type="number" id="dbPort" name="dbPort" 
-                   value="3306" class="form-control">
-            <small class="form-text">Local port for MariaDB access</small>
-        </div>
-    </form>
-
-    <div class="setup-status" style="display: none;">
-        <div class="status-step">
+    <div class="setup-status">
+        <div class="status-step" id="step-create-db">
             <span class="status-icon">⭕</span>
-            <span class="status-text">Saving configuration...</span>
+            <span class="status-text">Creating database 'partdb'...</span>
         </div>
-        <div class="status-step">
+        <div class="status-step" id="step-create-table">
             <span class="status-icon">⭕</span>
-            <span class="status-text">Starting MariaDB...</span>
+            <span class="status-text">Creating LED mapping table...</span>
         </div>
-        <div class="status-step">
-            <span class="status-icon">⭕</span>
-            <span class="status-text">Creating database...</span>
-        </div>
-        <div class="status-step">
+        <div class="status-step" id="step-import-triggers">
             <span class="status-icon">⭕</span>
             <span class="status-text">Importing triggers...</span>
         </div>
-        <div class="status-step">
+        <div class="status-step" id="step-verify">
             <span class="status-icon">⭕</span>
-            <span class="status-text">Updating Part-DB configuration...</span>
+            <span class="status-text">Verifying setup...</span>
         </div>
+    </div>
+
+    <div class="verification-output" style="display: none;">
+        <h3>Database Verification</h3>
+        <pre class="verification-results"></pre>
     </div>
 
     <div class="button-group">
         <button class="button previous" onclick="previousStep()">Back</button>
         <button class="button install" onclick="setupDatabase()">Setup Database</button>
-        <button class="button next" onclick="nextStep()" style="display: none;">Continue</button>
-    </div>
-</div>
-
-<div class="step" id="step-database">
-    <h3>2. Creating Database</h3>
-    <p>Setting up PartDB database...</p>
-    <div class="status">
-        <span class="status-text">Pending...</span>
-        <div class="spinner"></div>
+        <button class="button next" onclick="navigateToStep('finish')" style="display: none;">Continue</button>
     </div>
 </div>
 
 <script>
 async function updateStatus(step, status, message = null) {
-    const statusSteps = document.querySelectorAll('.status-step');
-    const statusStep = statusSteps[step];
+    const statusStep = document.getElementById(`step-${step}`);
+    if (!statusStep) return;
+    
     const icon = statusStep.querySelector('.status-icon');
+    const text = statusStep.querySelector('.status-text');
     
     if (message) {
-        statusStep.querySelector('.status-text').textContent = message;
+        text.textContent = message;
     }
     
     switch (status) {
@@ -90,63 +61,50 @@ async function updateStatus(step, status, message = null) {
 
 async function setupDatabase() {
     try {
-        // Setup-Status anzeigen
-        document.querySelector('.setup-status').style.display = 'block';
         document.querySelector('.button.install').disabled = true;
+        document.querySelector('.setup-status').style.display = 'block';
         
-        // 1. Konfiguration speichern
-        updateStatus(0, 'pending');
-        const formData = new FormData(document.getElementById('dbForm'));
-        const saveResponse = await fetch('ajax/save_mariadb_config.php', {
-            method: 'POST',
-            body: formData
-        });
-        
-        if (!saveResponse.ok) {
-            throw new Error(`HTTP error! status: ${saveResponse.status}`);
+        // 1. Create Database
+        updateStatus('create-db', 'pending');
+        const createDbResponse = await fetch('ajax/database_setup.php?step=create_database');
+        const createDbData = await createDbResponse.json();
+        if (!createDbData.success) {
+            throw new Error(createDbData.error || 'Failed to create database');
         }
+        updateStatus('create-db', 'success');
         
-        let saveData = await saveResponse.json();
-        if (!saveData.success) {
-            throw new Error(saveData.error || 'Failed to save configuration');
+        // 2. Create Table
+        updateStatus('create-table', 'pending');
+        const createTableResponse = await fetch('ajax/database_setup.php?step=create_table');
+        const createTableData = await createTableResponse.json();
+        if (!createTableData.success) {
+            throw new Error(createTableData.error || 'Failed to create table');
         }
-        updateStatus(0, 'success');
+        updateStatus('create-table', 'success');
         
-        // 2. MariaDB starten
-        updateStatus(1, 'pending');
-        const setupResponse = await fetch('ajax/setup_mariadb.php');
-        let setupData = await setupResponse.json();
-        if (!setupData.success) {
-            throw new Error(setupData.error || 'Failed to start MariaDB');
+        // 3. Import Triggers
+        updateStatus('import-triggers', 'pending');
+        const importTriggersResponse = await fetch('ajax/database_setup.php?step=import_triggers');
+        const importTriggersData = await importTriggersResponse.json();
+        if (!importTriggersData.success) {
+            throw new Error(importTriggersData.error || 'Failed to import triggers');
         }
-        updateStatus(1, 'success');
+        updateStatus('import-triggers', 'success');
         
-        // 3. Datenbank erstellen
-        updateStatus(2, 'pending');
-        const dbResponse = await fetch('ajax/create_database.php');
-        let dbData = await dbResponse.json();
-        if (!dbData.success) {
-            throw new Error(dbData.error || 'Failed to create database');
+        // 4. Verify Setup
+        updateStatus('verify', 'pending');
+        const verifyResponse = await fetch('ajax/database_setup.php?step=verify');
+        const verifyData = await verifyResponse.json();
+        if (!verifyData.success) {
+            throw new Error(verifyData.error || 'Verification failed');
         }
-        updateStatus(2, 'success');
+        updateStatus('verify', 'success');
         
-        // 4. Trigger importieren
-        updateStatus(3, 'pending');
-        const triggerResponse = await fetch('ajax/import_triggers.php');
-        let triggerData = await triggerResponse.json();
-        if (!triggerData.success) {
-            throw new Error(triggerData.error || 'Failed to import triggers');
+        // Show verification results
+        if (verifyData.results) {
+            document.querySelector('.verification-output').style.display = 'block';
+            document.querySelector('.verification-results').textContent = verifyData.results;
         }
-        updateStatus(3, 'success');
-        
-        // 5. Part-DB Konfiguration aktualisieren
-        updateStatus(4, 'pending');
-        const updateResponse = await fetch('ajax/update_partdb_config.php');
-        let updateData = await updateResponse.json();
-        if (!updateData.success) {
-            throw new Error(updateData.error || 'Failed to update Part-DB configuration');
-        }
-        updateStatus(4, 'success');
         
         // Setup erfolgreich
         showSuccess('Database setup completed successfully!');
@@ -157,25 +115,47 @@ async function setupDatabase() {
         console.error('Error:', error);
         showError(error.message);
         document.querySelector('.button.install').disabled = false;
-        
-        // Zeige Fehler im Status an
-        const statusSteps = document.querySelectorAll('.status-step');
-        for (let i = 0; i < statusSteps.length; i++) {
-            const icon = statusSteps[i].querySelector('.status-icon');
-            if (icon.textContent === '⏳') {
-                updateStatus(i, 'error');
-            }
-        }
     }
 }
 
-window.setupDatabase = setupDatabase;
+function showSuccess(message) {
+    const successDiv = document.createElement('div');
+    successDiv.className = 'success-message';
+    successDiv.textContent = message;
+    
+    // Entferne vorherige Nachrichten
+    document.querySelectorAll('.success-message, .error-message').forEach(el => el.remove());
+    
+    document.querySelector('.button-group').before(successDiv);
+}
+
+function showError(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message';
+    errorDiv.textContent = message;
+    
+    // Entferne vorherige Nachrichten
+    document.querySelectorAll('.success-message, .error-message').forEach(el => el.remove());
+    
+    document.querySelector('.button-group').before(errorDiv);
+}
 </script>
 
 <style>
-.form-text {
-    font-size: 0.875em;
-    color: #666;
-    margin-top: 0.25rem;
+.verification-output {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+}
+
+.verification-results {
+    background: #fff;
+    padding: 10px;
+    border: 1px solid #eee;
+    border-radius: 3px;
+    white-space: pre-wrap;
+    font-family: monospace;
 }
 </style> 

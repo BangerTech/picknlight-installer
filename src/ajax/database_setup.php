@@ -209,6 +209,34 @@ try {
             }
             break;
 
+        case 'verify':
+            // Führe verschiedene Überprüfungen durch
+            $verificationResults = [];
+            
+            // Prüfe Tabellen
+            $result = execCommand("docker exec mariadb mariadb -h 127.0.0.1 -u root -proot partdb -e 'SHOW TABLES'");
+            if ($result['success']) {
+                $verificationResults[] = "Tables in database:\n" . $result['output'];
+            }
+            
+            // Prüfe LED Mapping Tabelle
+            $result = execCommand("docker exec mariadb mariadb -h 127.0.0.1 -u root -proot partdb -e 'DESCRIBE led_mapping'");
+            if ($result['success']) {
+                $verificationResults[] = "\nLED Mapping table structure:\n" . $result['output'];
+            }
+            
+            // Prüfe Trigger
+            $result = execCommand("docker exec mariadb mariadb -h 127.0.0.1 -u root -proot partdb -e 'SHOW TRIGGERS'");
+            if ($result['success']) {
+                $verificationResults[] = "\nConfigured triggers:\n" . $result['output'];
+            }
+            
+            echo json_encode([
+                'success' => true,
+                'results' => implode("\n", $verificationResults)
+            ]);
+            break;
+
         default:
             throw new Exception('Unknown step: ' . $step);
     }

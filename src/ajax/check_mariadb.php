@@ -11,6 +11,24 @@ function execCommand($command) {
     ];
 }
 
+function waitForConnection($config, $maxAttempts = 30) {
+    for ($i = 1; $i <= $maxAttempts; $i++) {
+        error_log("Connection attempt $i of $maxAttempts");
+        
+        // Warte erst mal, bis der Container wirklich bereit ist
+        sleep(2);
+        
+        $result = execCommand("docker exec mariadb /usr/bin/mariadb -u root -p{$config['root_password']} --protocol=tcp -h 127.0.0.1 -e 'SELECT 1'");
+        if ($result['success']) {
+            error_log("Successfully connected to MariaDB");
+            return true;
+        }
+        
+        error_log("Connection failed, retrying...");
+    }
+    return false;
+}
+
 try {
     $configDir = getenv('CONFIG_DIR') ?: '/app/config';
     
@@ -29,9 +47,8 @@ try {
         throw new Exception('MariaDB container is not healthy');
     }
     
-    // Versuche eine Verbindung
-    $result = execCommand("docker exec mariadb mariadb -u root -p{$config['root_password']} -e 'SELECT 1;'");
-    if (!$result['success']) {
+    // Versuche mehrmals eine Verbindung herzustellen
+    if (!waitForConnection($config)) {
         throw new Exception('Could not connect to MariaDB: ' . $result['output']);
     }
     

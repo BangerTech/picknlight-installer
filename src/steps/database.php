@@ -141,6 +141,7 @@ async function setupDatabase() {
 
 async function integratePartDB() {
     try {
+        console.log('Starting Part-DB integration...');
         document.querySelector('.button.integrate').disabled = true;
         document.querySelector('.partdb-integration-status').style.display = 'block';
         
@@ -149,8 +150,11 @@ async function integratePartDB() {
         updateStatus('start-partdb', 'pending');
         updateStatus('migrate-db', 'pending');
         
+        console.log('Sending request to update_partdb_config.php...');
         const response = await fetch('ajax/update_partdb_config.php');
+        console.log('Got response:', response);
         const data = await response.json();
+        console.log('Parsed data:', data);
         
         if (!data.success) {
             throw new Error(data.error || 'Failed to integrate Part-DB');

@@ -4,7 +4,7 @@ services:
   partdb:
     container_name: partdb
     ports:
-      - '{{PORT}}:80'
+      - '8034:80'
     volumes:
       - ./partdb/uploads:/var/www/html/uploads
       - ./partdb/data:/var/www/html/public/media
@@ -14,10 +14,10 @@ services:
     environment:
       DATABASE_URL: mysql://partdb:root@mariadb:3306/partdb
       APP_ENV: docker
-      DEFAULT_LANG: {{DEFAULT_LANG}}
+      DEFAULT_LANG: de
       DEFAULT_TIMEZONE: Europe/Berlin
       BASE_CURRENCY: EUR
-      INSTANCE_NAME: {{INSTANCE_NAME}}
+      INSTANCE_NAME: Pick'n'Light
       ALLOW_ATTACHMENT_DOWNLOADS: 0
       USE_GRAVATAR: 0
       BANNER: Pick´n´Light<br>This will get you sorted

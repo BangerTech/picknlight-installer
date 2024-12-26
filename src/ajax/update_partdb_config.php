@@ -3,6 +3,9 @@ header('Content-Type: application/json');
 
 function execCommand($command) {
     exec($command . " 2>&1", $output, $return_var);
+    error_log("Executing command: $command");
+    error_log("Command output: " . implode("\n", $output));
+    error_log("Command return: $return_var");
     return [
         'success' => $return_var === 0,
         'output' => implode("\n", $output)
@@ -10,11 +13,13 @@ function execCommand($command) {
 }
 
 try {
+    error_log("Starting Part-DB integration process");
     $configDir = getenv('CONFIG_DIR') ?: '/app/config';
     
     // Lade MariaDB-Konfiguration
     $dbConfig = json_decode(file_get_contents("$configDir/mariadb-config.json"), true);
     if ($dbConfig === null) {
+        error_log("Failed to load MariaDB configuration");
         throw new Exception('Failed to load MariaDB configuration');
     }
     

@@ -60,9 +60,10 @@ async function updateStatus(step, status, message = null) {
     if (!statusStep) return;
     
     const icon = statusStep.querySelector('.status-icon');
+    const textElement = statusStep.querySelector('.status-text');
     
     if (message) {
-        statusStep.querySelector('.status-text').textContent = message;
+        textElement.textContent = message;
     }
     
     switch (status) {
@@ -85,10 +86,8 @@ async function installNodeRed() {
         document.querySelector('.button.install').disabled = true;
         document.querySelector('.setup-status').style.display = 'block';
         
-        updateStatus('config', 'pending');
-        updateStatus('directories', 'pending');
-        updateStatus('nodes', 'pending');
-        updateStatus('container', 'pending');
+        const steps = ['config', 'directories', 'container', 'nodes'];
+        steps.forEach(step => updateStatus(step, 'pending'));
         
         const formData = new FormData(document.getElementById('noderedForm'));
         const saveResponse = await fetch('ajax/save_nodered_config.php', {
@@ -103,29 +102,44 @@ async function installNodeRed() {
         updateStatus('config', 'success');
         
         const response = await fetch('ajax/setup_nodered.php');
-        const data = await response.json();
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
         
-        if (!data.success) {
-            throw new Error(data.error || 'Installation failed');
-        }
-        
-        if (data.status) {
-            const steps = ['config', 'directories', 'nodes', 'container'];
-            const currentStepIndex = steps.indexOf(data.status.step);
+        while (true) {
+            const {value, done} = await reader.read();
+            if (done) break;
             
-            for (let i = 0; i <= currentStepIndex; i++) {
-                updateStatus(steps[i], 'success');
-            }
+            const chunk = decoder.decode(value);
+            const updates = chunk.split('\n').filter(line => line.trim());
             
-            if (data.progress) {
-                const currentStep = steps[currentStepIndex];
-                const statusStep = document.getElementById(`step-${currentStep}`);
-                if (statusStep) {
-                    statusStep.querySelector('.status-text').textContent = data.progress;
+            for (const update of updates) {
+                try {
+                    if (!update.trim()) continue;
+                    const data = JSON.parse(update);
+                    if (data.status) {
+                        const currentStep = data.status.step;
+                        for (let i = 0; i < steps.length; i++) {
+                            const step = steps[i];
+                            if (steps.indexOf(step) < steps.indexOf(currentStep)) {
+                                updateStatus(step, 'success');
+                            } else if (step === currentStep) {
+                                if (currentStep === 'container' && data.progress === 'Node-RED container started successfully') {
+                                    updateStatus(step, 'success', data.progress);
+                                } else {
+                                    updateStatus(step, 'pending', data.progress || null);
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    if (update.trim()) {
+                        console.error('Failed to parse update:', e, 'Content:', update);
+                    }
                 }
             }
         }
         
+        steps.forEach(step => updateStatus(step, 'success'));
         showSuccess('Node-RED installed successfully!');
         document.querySelector('.button.install').style.display = 'none';
         document.querySelector('.button.next').style.display = 'inline-block';
@@ -142,7 +156,6 @@ function showSuccess(message) {
     successDiv.className = 'success-message';
     successDiv.textContent = message;
     
-    // Entferne vorherige Nachrichten
     document.querySelectorAll('.success-message, .error-message').forEach(el => el.remove());
     
     document.querySelector('.button-group').before(successDiv);

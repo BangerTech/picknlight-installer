@@ -36,11 +36,21 @@ try {
         throw new Exception('Failed to load Part-DB configuration');
     }
     
-    // Setze neue Datenbankverbindung
-    $partdbConfig['database_url'] = "mysql://partdb:{$dbConfig['db_password']}@mariadb:3306/partdb";
+    // Erstelle Datenbankverbindungs-URL
+    $dbUrl = sprintf(
+        "mysql://partdb:%s@mariadb:3306/partdb",
+        urlencode($dbConfig['db_password'])
+    );
+    
+    // Ersetze die Datenbankverbindung im Template
+    $template = str_replace(
+        'DATABASE_URL=sqlite:///%kernel.project_dir%/var/db/app.db',
+        "DATABASE_URL=$dbUrl",
+        $template
+    );
     
     // Speichere aktualisierte Konfiguration
-    if (file_put_contents("$configDir/partdb-config.json", json_encode($partdbConfig)) === false) {
+    if (file_put_contents("$configDir/docker-compose-partdb.yml", $template) === false) {
         throw new Exception('Failed to save Part-DB configuration');
     }
     
@@ -59,7 +69,24 @@ try {
         throw new Exception('Failed to migrate database: ' . $result['output']);
     }
     
-    echo json_encode(['success' => true]);
+    // Hole Verifikationsinformationen
+    $verification = [];
+    
+    // Prüfe docker-compose Konfiguration
+    $verification[] = "Part-DB docker-compose.yml:";
+    $verification[] = file_get_contents("$configDir/docker-compose-partdb.yml");
+    
+    // Prüfe Datenbankverbindung
+    $result = execCommand("docker exec --user=www-data partdb php bin/console doctrine:migrations:status");
+    if ($result['success']) {
+        $verification[] = "\nDatabase Migration Status:";
+        $verification[] = $result['output'];
+    }
+    
+    echo json_encode([
+        'success' => true,
+        'verification' => implode("\n", $verification)
+    ]);
 } catch (Exception $e) {
     echo json_encode([
         'success' => false,

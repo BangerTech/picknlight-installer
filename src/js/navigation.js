@@ -36,11 +36,16 @@ function previousStep() {
     const currentIndex = stepOrder.indexOf(currentStep);
     console.log('Previous step - Current index:', currentIndex);
     
+    console.log('Current step:', currentStep);
+    console.log('Step order:', stepOrder);
+    console.log('Current index:', currentIndex);
+    
     if (currentIndex > 0) {
         const prevStep = stepOrder[currentIndex - 1];
         console.log('Moving to previous step:', prevStep);
-        navigateToStep(prevStep);
+        window.location.href = `index.php?step=${prevStep}`;
     } else {
+        console.log('Already at first step');
         console.error('Cannot navigate: current step not found or already at first step');
     }
 }
@@ -48,3 +53,6 @@ function previousStep() {
 window.navigateToStep = navigateToStep;
 window.nextStep = nextStep;
 window.previousStep = previousStep; 
+
+console.log('Navigation.js loaded');
+console.log('Step order available:', stepOrder); 

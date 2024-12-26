@@ -1,7 +1,1 @@
-{
-    "useTraefik": false,
-    "domain": "",
-    "port": "8034",
-    "instanceName": "Pick'n'Light",
-    "defaultLang": "de"
-}
+{"useTraefik":false,"domain":"","port":"8034","instanceName":"Pick'n'Light","defaultLang":"de","database_url":"mysql:\/\/partdb:root@mariadb:3306\/partdb"}

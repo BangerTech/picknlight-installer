@@ -20,14 +20,35 @@
         </div>
     </div>
 
+    <div class="partdb-integration-status" style="display: none;">
+        <h3>Part-DB Integration</h3>
+        <div class="status-step" id="step-stop-partdb">
+            <span class="status-icon">⭕</span>
+            <span class="status-text">Stopping Part-DB container...</span>
+        </div>
+        <div class="status-step" id="step-update-config">
+            <span class="status-icon">⭕</span>
+            <span class="status-text">Updating database configuration...</span>
+        </div>
+        <div class="status-step" id="step-start-partdb">
+            <span class="status-icon">⭕</span>
+            <span class="status-text">Starting Part-DB container...</span>
+        </div>
+        <div class="status-step" id="step-migrate-db">
+            <span class="status-icon">⭕</span>
+            <span class="status-text">Migrating database...</span>
+        </div>
+    </div>
+
     <div class="verification-output" style="display: none;">
         <h3>Database Verification</h3>
         <pre class="verification-results"></pre>
     </div>
 
     <div class="button-group">
-        <button class="button previous" onclick="previousStep()">Back</button>
+        <button class="button previous" onclick="window.previousStep()">Back</button>
         <button class="button install" onclick="setupDatabase()">Setup Database</button>
+        <button class="button integrate" onclick="integratePartDB()" style="display: none;">Integrate with Part-DB</button>
         <button class="button next" onclick="navigateToStep('final')" style="display: none;">Continue</button>
     </div>
 </div>
@@ -109,12 +130,50 @@ async function setupDatabase() {
         // Setup erfolgreich
         showSuccess('Database setup completed successfully!');
         document.querySelector('.button.install').style.display = 'none';
-        document.querySelector('.button.next').style.display = 'inline-block';
+        document.querySelector('.button.integrate').style.display = 'inline-block';
         
     } catch (error) {
         console.error('Error:', error);
         showError(error.message);
         document.querySelector('.button.install').disabled = false;
+    }
+}
+
+async function integratePartDB() {
+    try {
+        document.querySelector('.button.integrate').disabled = true;
+        document.querySelector('.partdb-integration-status').style.display = 'block';
+        
+        updateStatus('stop-partdb', 'pending');
+        updateStatus('update-config', 'pending');
+        updateStatus('start-partdb', 'pending');
+        updateStatus('migrate-db', 'pending');
+        
+        const response = await fetch('ajax/update_partdb_config.php');
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to integrate Part-DB');
+        }
+        
+        updateStatus('stop-partdb', 'success');
+        updateStatus('update-config', 'success');
+        updateStatus('start-partdb', 'success');
+        updateStatus('migrate-db', 'success');
+        
+        if (data.verification) {
+            document.querySelector('.verification-output').style.display = 'block';
+            document.querySelector('.verification-results').textContent = data.verification;
+        }
+        
+        showSuccess('Part-DB integration completed successfully!');
+        document.querySelector('.button.integrate').style.display = 'none';
+        document.querySelector('.button.next').style.display = 'inline-block';
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showError(error.message);
+        document.querySelector('.button.integrate').disabled = false;
     }
 }
 
@@ -157,5 +216,13 @@ function showError(message) {
     border-radius: 3px;
     white-space: pre-wrap;
     font-family: monospace;
+}
+
+.partdb-integration-status {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
 }
 </style> 

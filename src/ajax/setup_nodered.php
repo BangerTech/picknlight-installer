@@ -32,11 +32,14 @@ try {
     $configDir = getenv('CONFIG_DIR') ?: '/app/config';
     error_log("Config dir: $configDir");
     
+    $status = ['step' => 'config'];
+    
     // Erstelle benötigte Verzeichnisse
     $directories = [
         "$configDir/nodered/data"
     ];
     
+    $status['step'] = 'directories';
     foreach ($directories as $dir) {
         error_log("Creating directory: $dir");
         if (!file_exists($dir)) {
@@ -92,9 +95,11 @@ EOT;
         throw new Exception('Could not write Node-RED configuration file');
     }
     
+    $status['step'] = 'nodes';
     // Stelle sicher, dass das Docker-Netzwerk existiert
     ensureNetworkExists();
     
+    $status['step'] = 'container';
     $result = execCommand("cd $configDir && docker compose -f docker-compose-nodered.yml up -d");
     if (!$result['success']) {
         throw new Exception('Failed to start Node-RED: ' . $result['output']);
@@ -112,18 +117,34 @@ EOT;
             break;
         }
         $retries++;
+        if ($retries % 5 === 0) {
+            // Sende Zwischenstatus alle 5 Sekunden
+            echo json_encode([
+                'success' => true,
+                'status' => $status,
+                'progress' => "Waiting for Node-RED to start ($retries/$maxRetries)..."
+            ]);
+            ob_flush();
+            flush();
+        }
     }
 
     if ($retries >= $maxRetries) {
         throw new Exception('Node-RED failed to start');
     }
     
-    echo json_encode(['success' => true]);
+    echo json_encode([
+        'success' => true,
+        'status' => $status,
+        'message' => 'Node-RED setup completed successfully'
+    ]);
+
 } catch (Exception $e) {
     error_log('Node-RED setup error: ' . $e->getMessage());
     error_log('Stack trace: ' . $e->getTraceAsString());
     echo json_encode([
         'success' => false,
+        'status' => $status ?? null,
         'error' => $e->getMessage()
     ]);
 } 

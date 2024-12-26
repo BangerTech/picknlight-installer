@@ -23,16 +23,20 @@
         </div>
     </form>
 
-    <div class="setup-status" style="display: none;">
-        <div class="status-step">
+    <div class="setup-status">
+        <div class="status-step" id="step-config">
             <span class="status-icon">⭕</span>
             <span class="status-text">Saving configuration...</span>
         </div>
-        <div class="status-step">
+        <div class="status-step" id="step-directories">
             <span class="status-icon">⭕</span>
             <span class="status-text">Creating directories...</span>
         </div>
-        <div class="status-step">
+        <div class="status-step" id="step-nodes">
+            <span class="status-icon">⭕</span>
+            <span class="status-text">Installing required nodes...</span>
+        </div>
+        <div class="status-step" id="step-container">
             <span class="status-icon">⭕</span>
             <span class="status-text">Starting Node-RED container...</span>
         </div>
@@ -52,8 +56,9 @@ document.getElementById('useTraefik').addEventListener('change', function() {
 });
 
 async function updateStatus(step, status, message = null) {
-    const statusSteps = document.querySelectorAll('.status-step');
-    const statusStep = statusSteps[step];
+    const statusStep = document.getElementById(`step-${step}`);
+    if (!statusStep) return;
+    
     const icon = statusStep.querySelector('.status-icon');
     
     if (message) {
@@ -77,12 +82,14 @@ async function updateStatus(step, status, message = null) {
 
 async function installNodeRed() {
     try {
-        // Setup-Status anzeigen
-        document.querySelector('.setup-status').style.display = 'block';
         document.querySelector('.button.install').disabled = true;
+        document.querySelector('.setup-status').style.display = 'block';
         
-        // 1. Konfiguration speichern
-        updateStatus(0, 'pending');
+        updateStatus('config', 'pending');
+        updateStatus('directories', 'pending');
+        updateStatus('nodes', 'pending');
+        updateStatus('container', 'pending');
+        
         const formData = new FormData(document.getElementById('noderedForm'));
         const saveResponse = await fetch('ajax/save_nodered_config.php', {
             method: 'POST',
@@ -93,31 +100,33 @@ async function installNodeRed() {
         if (!saveData.success) {
             throw new Error(saveData.error || 'Failed to save configuration');
         }
-        updateStatus(0, 'success');
+        updateStatus('config', 'success');
         
-        // 2. Container starten
-        updateStatus(1, 'pending');
-        const setupResponse = await fetch('ajax/setup_nodered.php');
-        const setupData = await setupResponse.json();
+        const response = await fetch('ajax/setup_nodered.php');
+        const data = await response.json();
         
-        if (!setupData.success) {
-            throw new Error(setupData.error || 'Failed to start Node-RED');
+        if (!data.success) {
+            throw new Error(data.error || 'Installation failed');
         }
-        updateStatus(1, 'success');
         
-        // 3. Container-Status prüfen
-        updateStatus(2, 'pending');
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Warte 2 Sekunden
-        const checkResponse = await fetch('ajax/check_nodered.php');
-        const checkData = await checkResponse.json();
-        
-        if (!checkData.success) {
-            throw new Error(checkData.error || 'Node-RED is not running properly');
+        if (data.status) {
+            const steps = ['config', 'directories', 'nodes', 'container'];
+            const currentStepIndex = steps.indexOf(data.status.step);
+            
+            for (let i = 0; i <= currentStepIndex; i++) {
+                updateStatus(steps[i], 'success');
+            }
+            
+            if (data.progress) {
+                const currentStep = steps[currentStepIndex];
+                const statusStep = document.getElementById(`step-${currentStep}`);
+                if (statusStep) {
+                    statusStep.querySelector('.status-text').textContent = data.progress;
+                }
+            }
         }
-        updateStatus(2, 'success');
         
-        // Setup erfolgreich
-        showSuccess('Node-RED was successfully installed!');
+        showSuccess('Node-RED installed successfully!');
         document.querySelector('.button.install').style.display = 'none';
         document.querySelector('.button.next').style.display = 'inline-block';
         

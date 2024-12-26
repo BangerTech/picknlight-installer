@@ -100,6 +100,24 @@ EOT;
         throw new Exception('Failed to start Node-RED: ' . $result['output']);
     }
     
+    // Warte auf Node-RED Start
+    $retries = 0;
+    $maxRetries = 30;
+    while ($retries < $maxRetries) {
+        sleep(1);
+        $result = execCommand("docker inspect -f '{{.State.Health.Status}}' nodered");
+        if (trim($result['output']) === 'healthy') {
+            // Gebe Node-RED etwas mehr Zeit für die Node-Installation
+            sleep(10);
+            break;
+        }
+        $retries++;
+    }
+
+    if ($retries >= $maxRetries) {
+        throw new Exception('Node-RED failed to start');
+    }
+    
     echo json_encode(['success' => true]);
 } catch (Exception $e) {
     error_log('Node-RED setup error: ' . $e->getMessage());

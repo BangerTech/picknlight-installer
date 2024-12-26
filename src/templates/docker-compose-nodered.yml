@@ -8,6 +8,7 @@ services:
       - TZ=Europe/Berlin
       - NODE_RED_ENABLE_PROJECTS=true
       - NODE_RED_ENABLE_SAFE_MODE=false
+      - NODE_RED_INSTALL_MODULES=node-red-node-mysql,node-red-dashboard,node-red-contrib-ui-iro-color-picker
     ports:
       - "{{PORT}}:1880"
     volumes:

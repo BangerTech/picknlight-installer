@@ -108,43 +108,40 @@ EOT;
     // Warte auf Node-RED Start
     $retries = 0;
     $maxRetries = 30;
+    $finalResponse = null;
+    
     while ($retries < $maxRetries) {
         sleep(1);
         $result = execCommand("docker inspect -f '{{.State.Health.Status}}' nodered");
         if (trim($result['output']) === 'healthy') {
             // Gebe Node-RED etwas mehr Zeit für die Node-Installation
             sleep(10);
+            $finalResponse = [
+                'success' => true,
+                'status' => $status,
+                'message' => 'Node-RED successfully started'
+            ];
             break;
         }
         $retries++;
-        if ($retries % 5 === 0) {
-            // Sende Zwischenstatus alle 5 Sekunden
-            echo json_encode([
-                'success' => true,
-                'status' => $status,
-                'progress' => "Waiting for Node-RED to start ($retries/$maxRetries)..."
-            ]);
-            ob_flush();
-            flush();
-        }
-    }
-
-    if ($retries >= $maxRetries) {
-        throw new Exception('Node-RED failed to start');
+        
+        // Aktualisiere nur den Status, sende aber keine Response
+        $status['progress'] = "Waiting for Node-RED to start ($retries/$maxRetries)...";
     }
     
-    echo json_encode([
-        'success' => true,
-        'status' => $status,
-        'message' => 'Node-RED setup completed successfully'
-    ]);
+    // Sende die finale Response nur einmal am Ende
+    if ($finalResponse === null) {
+        $finalResponse = [
+            'success' => false,
+            'error' => 'Timeout waiting for Node-RED to start'
+        ];
+    }
+    
+    echo json_encode($finalResponse);
 
 } catch (Exception $e) {
-    error_log('Node-RED setup error: ' . $e->getMessage());
-    error_log('Stack trace: ' . $e->getTraceAsString());
     echo json_encode([
         'success' => false,
-        'status' => $status ?? null,
         'error' => $e->getMessage()
     ]);
 } 

@@ -28,7 +28,7 @@
     <div class="button-group">
         <button class="button previous" onclick="previousStep()">Back</button>
         <button class="button install" onclick="setupDatabase()">Setup Database</button>
-        <button class="button next" onclick="navigateToStep('finish')" style="display: none;">Continue</button>
+        <button class="button next" onclick="navigateToStep('final')" style="display: none;">Continue</button>
     </div>
 </div>
 

@@ -44,3 +44,12 @@ function previousStep() {
         console.error('Cannot navigate: current step not found or already at first step');
     }
 } 
+
+const stepOrder = [
+    'welcome',
+    'nodered',
+    'partdb',
+    'mariadb',
+    'database',
+    'final'
+]; 

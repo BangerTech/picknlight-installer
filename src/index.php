@@ -10,7 +10,7 @@ $steps = [
     'partdb' => ['title' => 'Part-DB', 'file' => 'steps/partdb.php'],
     'mariadb' => ['title' => 'MariaDB', 'file' => 'steps/mariadb.php'],
     'database' => ['title' => 'Database', 'file' => 'steps/database.php'],
-    'finish' => ['title' => 'Finish', 'file' => 'steps/finish.php']
+    'final' => ['title' => 'Finish', 'file' => 'steps/final.php']
 ];
 
 // Validate current step
@@ -37,7 +37,7 @@ $step_data = $steps[$current_step];
         
         <div class="progress-bar">
             <?php 
-            $stepOrder = ['welcome', 'nodered', 'partdb', 'mariadb', 'database', 'finish'];
+            $stepOrder = ['welcome', 'nodered', 'partdb', 'mariadb', 'database', 'final'];
             $currentIndex = array_search($current_step, $stepOrder);
             
             foreach ($stepOrder as $index => $step): 

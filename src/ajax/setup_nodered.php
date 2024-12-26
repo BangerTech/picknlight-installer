@@ -114,10 +114,15 @@ EOT;
         sleep(1);
         $result = execCommand("docker inspect -f '{{.State.Health.Status}}' nodered");
         if (trim($result['output']) === 'healthy') {
+            // Update status to nodes installation
+            $status['step'] = 'nodes';
+            
             // Installiere notwendige Node-RED Pakete
             $nodesToInstall = [
                 'node-red-node-mysql',
-                'node-red-dashboard'
+                'node-red-dashboard',
+                'node-red-node-ui-table',
+                'node-red-contrib-ui-iro-color-picker'
             ];
             
             foreach ($nodesToInstall as $node) {
@@ -129,6 +134,7 @@ EOT;
             }
             
             // Starte Node-RED neu, damit die neuen Nodes geladen werden
+            $status['progress'] = "Restarting Node-RED...";
             execCommand("docker restart nodered");
             
             // Warte kurz, bis Node-RED wieder gestartet ist

@@ -32,13 +32,13 @@
             <span class="status-icon">⭕</span>
             <span class="status-text">Creating directories...</span>
         </div>
-        <div class="status-step" id="step-nodes">
-            <span class="status-icon">⭕</span>
-            <span class="status-text">Installing required nodes...</span>
-        </div>
         <div class="status-step" id="step-container">
             <span class="status-icon">⭕</span>
             <span class="status-text">Starting Node-RED container...</span>
+        </div>
+        <div class="status-step" id="step-nodes">
+            <span class="status-icon">⭕</span>
+            <span class="status-text">Installing required nodes...</span>
         </div>
     </div>
 

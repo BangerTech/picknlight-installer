@@ -114,12 +114,30 @@ EOT;
         sleep(1);
         $result = execCommand("docker inspect -f '{{.State.Health.Status}}' nodered");
         if (trim($result['output']) === 'healthy') {
-            // Gebe Node-RED etwas mehr Zeit für die Node-Installation
+            // Installiere notwendige Node-RED Pakete
+            $nodesToInstall = [
+                'node-red-node-mysql',
+                'node-red-dashboard'
+            ];
+            
+            foreach ($nodesToInstall as $node) {
+                $status['progress'] = "Installing Node-RED package: $node";
+                $installResult = execCommand("docker exec nodered npm install $node");
+                if (!$installResult['success']) {
+                    throw new Exception("Failed to install Node-RED package $node: " . $installResult['output']);
+                }
+            }
+            
+            // Starte Node-RED neu, damit die neuen Nodes geladen werden
+            execCommand("docker restart nodered");
+            
+            // Warte kurz, bis Node-RED wieder gestartet ist
             sleep(10);
+            
             $finalResponse = [
                 'success' => true,
                 'status' => $status,
-                'message' => 'Node-RED successfully started'
+                'message' => 'Node-RED successfully started and packages installed'
             ];
             break;
         }

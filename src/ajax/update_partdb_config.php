@@ -42,46 +42,76 @@ try {
         urlencode($dbConfig['db_password'])
     );
     
+    // Bereite Traefik Labels vor
+    if ($partdbConfig['useTraefik']) {
+        $traefikLabels = <<<EOT
+      labels:
+        traefik.enable: true
+        traefik.http.routers.partdb.rule: Host(`{$partdbConfig['domain']}`)
+        traefik.http.services.partdb.loadbalancer.server.port: 80
+ EOT;
+    } else {
+        $traefikLabels = '';
+    }
+    
     // Ersetze die Datenbankverbindung im Template
     $template = str_replace(
-        'DATABASE_URL=sqlite:///%kernel.project_dir%/var/db/app.db',
-        "DATABASE_URL=$dbUrl",
+        'DATABASE_URL: sqlite:///%kernel.project_dir%/var/db/app.db',
+        "DATABASE_URL: $dbUrl",
         $template
     );
+    
+    // Ersetze weitere Template-Variablen
+    $replacements = [
+        '{{DEFAULT_LANG}}' => $partdbConfig['defaultLang'] ?? 'en',
+        '{{INSTANCE_NAME}}' => $partdbConfig['instanceName'] ?? 'Pick\'n\'Light',
+        '{{PORT}}' => $partdbConfig['port'] ?? '8034'
+    ];
+    
+    foreach ($replacements as $key => $value) {
+        $template = str_replace($key, $value, $template);
+    }
+    
+    // Ersetze die Traefik Labels
+    $template = str_replace('{{TRAEFIK_LABELS}}', $traefikLabels, $template);
     
     // Speichere aktualisierte Konfiguration
     if (file_put_contents("$configDir/docker-compose-partdb.yml", $template) === false) {
         throw new Exception('Failed to save Part-DB configuration');
     }
     
+    // Zeige Fortschritt in der Verifikation
+    $verification = [];
+    $verification[] = "=== Stopping Part-DB container ===";
+    
     // Starte Part-DB neu
     $result = execCommand("cd $configDir && docker compose -f docker-compose-partdb.yml up -d");
+    $verification[] = "\n=== Starting Part-DB with new configuration ===";
+    $verification[] = "Updated docker-compose.yml:";
+    $verification[] = $template;
     if (!$result['success']) {
         throw new Exception('Failed to start Part-DB: ' . $result['output']);
     }
     
     // Warte kurz
     sleep(5);
+    $verification[] = "\n=== Running database migration ===";
     
     // Führe Datenbank-Migration aus
     $result = execCommand("docker exec --user=www-data partdb php bin/console doctrine:migrations:migrate --no-interaction");
     if (!$result['success']) {
         throw new Exception('Failed to migrate database: ' . $result['output']);
     }
-    
-    // Hole Verifikationsinformationen
-    $verification = [];
-    
-    // Prüfe docker-compose Konfiguration
-    $verification[] = "Part-DB docker-compose.yml:";
-    $verification[] = file_get_contents("$configDir/docker-compose-partdb.yml");
+    $verification[] = $result['output'];
     
     // Prüfe Datenbankverbindung
+    $verification[] = "\n=== Verifying database connection ===";
     $result = execCommand("docker exec --user=www-data partdb php bin/console doctrine:migrations:status");
     if ($result['success']) {
-        $verification[] = "\nDatabase Migration Status:";
         $verification[] = $result['output'];
     }
+    
+    $verification[] = "\n=== Integration completed successfully ===";
     
     echo json_encode([
         'success' => true,

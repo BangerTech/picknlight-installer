@@ -12,17 +12,17 @@ services:
     restart: unless-stopped
     image: jbtronics/part-db1:latest
     environment:
-      - DATABASE_URL=sqlite:///%kernel.project_dir%/var/db/app.db
-      - APP_ENV=docker
-      - DEFAULT_LANG={{DEFAULT_LANG}}
-      - DEFAULT_TIMEZONE=Europe/Berlin
-      - BASE_CURRENCY=EUR
-      - INSTANCE_NAME={{INSTANCE_NAME}}
-      - ALLOW_ATTACHMENT_DOWNLOADS=0
-      - USE_GRAVATAR=0
-      - BANNER=Pick´n´Light<br>This will get you sorted
-      - TRUSTED_PROXIES=0.0.0.0/0
-    {{TRAEFIK_LABELS}}
+      DATABASE_URL: sqlite:///%kernel.project_dir%/var/db/app.db
+      APP_ENV: docker
+      DEFAULT_LANG: {{DEFAULT_LANG}}
+      DEFAULT_TIMEZONE: Europe/Berlin
+      BASE_CURRENCY: EUR
+      INSTANCE_NAME: {{INSTANCE_NAME}}
+      ALLOW_ATTACHMENT_DOWNLOADS: 0
+      USE_GRAVATAR: 0
+      BANNER: Pick´n´Light<br>This will get you sorted
+      TRUSTED_PROXIES: 0.0.0.0/0
+      {{TRAEFIK_LABELS}}
     networks:
       - picknlight
 

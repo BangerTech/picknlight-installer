@@ -1,6 +1,23 @@
 <?php
-session_start();
+// Fehlerbehandlung
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+// Setze Header für JSON
 header('Content-Type: application/json');
+
+session_start();
+
+// Funktion zum sauberen JSON-Output
+function outputJSON($data) {
+    if (headers_sent()) {
+        error_log('Headers already sent in database_setup.php');
+        return;
+    }
+    echo json_encode($data);
+    exit;
+}
 
 function execCommand($command) {
     exec($command . " 2>&1", $output, $return_var);
@@ -210,31 +227,45 @@ try {
             break;
 
         case 'verify':
-            // Führe verschiedene Überprüfungen durch
-            $verificationResults = [];
-            
-            // Prüfe Tabellen
-            $result = execCommand("docker exec mariadb mariadb -h 127.0.0.1 -u root -proot partdb -e 'SHOW TABLES'");
-            if ($result['success']) {
-                $verificationResults[] = "Tables in database:\n" . $result['output'];
+            try {
+                // Hole die tatsächliche Tabellenstruktur
+                $result = execCommand("cd $configDir && docker compose -f docker-compose-mariadb.yml exec -T mariadb mariadb -h 127.0.0.1 -u root -proot partdb -e 'SHOW CREATE TABLE led_mapping\\G' 2>/dev/null");
+                if (!$result['success']) {
+                    throw new Exception('Failed to get table structure: ' . $result['output']);
+                }
+                
+                // Extrahiere CREATE TABLE Statement
+                preg_match('/Create Table: (CREATE TABLE.*?;)/s', $result['output'], $matches);
+                $tableStructure = $matches[1] ?? 'Table structure not available';
+                
+                // Hole die Trigger
+                $result = execCommand("cd $configDir && docker compose -f docker-compose-mariadb.yml exec -T mariadb mariadb -h 127.0.0.1 -u root -proot partdb -e 'SHOW CREATE TRIGGER before_insert_led_mapping; SHOW CREATE TRIGGER before_update_led_mapping;' 2>/dev/null");
+                if (!$result['success']) {
+                    throw new Exception('Failed to get triggers: ' . $result['output']);
+                }
+                
+                $triggers = $result['output'];
+
+                $response = [
+                    'success' => true,
+                    'message' => 'Verification completed successfully',
+                    'host' => 'localhost',
+                    'port' => '3306',
+                    'database' => 'partdb',
+                    'username' => 'partdb',
+                    'password' => $mariadbPassword,
+                    'tableStructure' => $tableStructure,
+                    'triggers' => $triggers
+                ];
+                
+                outputJSON($response);
+                
+            } catch (Exception $e) {
+                outputJSON([
+                    'success' => false,
+                    'error' => $e->getMessage()
+                ]);
             }
-            
-            // Prüfe LED Mapping Tabelle
-            $result = execCommand("docker exec mariadb mariadb -h 127.0.0.1 -u root -proot partdb -e 'DESCRIBE led_mapping'");
-            if ($result['success']) {
-                $verificationResults[] = "\nLED Mapping table structure:\n" . $result['output'];
-            }
-            
-            // Prüfe Trigger
-            $result = execCommand("docker exec mariadb mariadb -h 127.0.0.1 -u root -proot partdb -e 'SHOW TRIGGERS'");
-            if ($result['success']) {
-                $verificationResults[] = "\nConfigured triggers:\n" . $result['output'];
-            }
-            
-            echo json_encode([
-                'success' => true,
-                'results' => implode("\n", $verificationResults)
-            ]);
             break;
 
         default:

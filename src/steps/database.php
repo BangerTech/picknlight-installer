@@ -329,9 +329,9 @@ async function setupDatabase() {
         // Formatierte Tabellen-Struktur anzeigen
         if (verifyData.tableStructure) {
             const formattedTable = verifyData.tableStructure
-                .replace(/,/g, ',\n    ')
-                .replace(/\(/g, ' (\n    ')
-                .replace(/\)/g, '\n)');
+                .replace(/CREATE TABLE.*?\(/s, 'CREATE TABLE led_mapping (\n    ')
+                .replace(/,\s*(?=\w)/g, ',\n    ')
+                .replace(/\)\s*ENGINE.*$/, '\n);');
             document.getElementById('tableStructure').textContent = formattedTable;
         } else {
             document.getElementById('tableStructure').textContent = 'Table structure not available';
@@ -340,8 +340,10 @@ async function setupDatabase() {
         // Formatierte Trigger anzeigen
         if (verifyData.triggers) {
             const formattedTriggers = verifyData.triggers
-                .split('\n\n')
-                .join('\n\n/* ---------------------------------------- */\n\n');
+                .replace(/DELIMITER \/\/\n*/g, '')
+                .replace(/\n*DELIMITER ;/g, '')
+                .replace(/CREATE TRIGGER/g, '\n\nCREATE TRIGGER')
+                .trim();
             document.getElementById('triggerCode').textContent = formattedTriggers;
         } else {
             document.getElementById('triggerCode').textContent = 'No triggers defined';

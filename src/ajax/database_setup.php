@@ -183,23 +183,44 @@ try {
                         throw new Exception("Trigger file not found: $triggerFile");
                     }
                     
-                    // Trigger-Datei in den Container kopieren
-                    $basename = basename($triggerFile);
-                    $copyCommand = "docker cp $triggerFile mariadb:/tmp/$basename";
-                    $result = execCommand($copyCommand);
-                    if (!$result['success']) {
-                        throw new Exception('Failed to copy trigger file: ' . $result['output']);
+                    // Extrahiere Trigger-Namen aus der Datei
+                    $content = file_get_contents($triggerFile);
+                    if (preg_match('/CREATE TRIGGER\s+(\w+)/', $content, $matches)) {
+                        $triggerName = $matches[1];
+                        
+                        // Prüfe ob Trigger bereits existiert
+                        $checkCommand = "cd $configDir && docker compose -f docker-compose-mariadb.yml exec -T mariadb mariadb -h 127.0.0.1 -u root -proot partdb -e 'SHOW TRIGGERS WHERE Trigger = \"$triggerName\"'";
+                        $result = execCommand($checkCommand);
+                        
+                        if (!empty($result['output']) && strpos($result['output'], $triggerName) !== false) {
+                            // Trigger existiert bereits - lösche ihn zuerst
+                            $dropCommand = "cd $configDir && docker compose -f docker-compose-mariadb.yml exec -T mariadb mariadb -h 127.0.0.1 -u root -proot partdb -e 'DROP TRIGGER IF EXISTS $triggerName'";
+                            $result = execCommand($dropCommand);
+                            if (!$result['success']) {
+                                throw new Exception("Failed to drop existing trigger: " . $result['output']);
+                            }
+                            error_log("Dropped existing trigger: $triggerName");
+                        }
+                        
+                        // Trigger-Datei in den Container kopieren
+                        $basename = basename($triggerFile);
+                        $copyCommand = "docker cp $triggerFile mariadb:/tmp/$basename";
+                        $result = execCommand($copyCommand);
+                        if (!$result['success']) {
+                            throw new Exception('Failed to copy trigger file: ' . $result['output']);
+                        }
+                        
+                        // Trigger importieren
+                        $importCommand = "cd $configDir && docker compose -f docker-compose-mariadb.yml exec -T mariadb bash -c 'cat /tmp/$basename | mariadb -h 127.0.0.1 -u root -proot partdb'";
+                        $result = execCommand($importCommand);
+                        if (!$result['success']) {
+                            throw new Exception('Failed to import trigger: ' . $result['output']);
+                        }
+                        
+                        // Aufräumen
+                        execCommand("cd $configDir && docker compose -f docker-compose-mariadb.yml exec -T mariadb rm /tmp/$basename");
+                        error_log("Successfully imported trigger: $triggerName");
                     }
-                    
-                    // Trigger importieren
-                    $importCommand = "cd $configDir && docker compose -f docker-compose-mariadb.yml exec -T mariadb bash -c 'cat /tmp/$basename | mariadb -h 127.0.0.1 -u root -proot partdb'";
-                    $result = execCommand($importCommand);
-                    if (!$result['success']) {
-                        throw new Exception('Failed to import trigger: ' . $result['output']);
-                    }
-                    
-                    // Aufräumen
-                    execCommand("cd $configDir && docker compose -f docker-compose-mariadb.yml exec -T mariadb rm /tmp/$basename");
                 }
                 
                 echo json_encode(['success' => true]);

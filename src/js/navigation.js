@@ -35,7 +35,7 @@ function nextStep() {
 
 function previousStep() {
     const currentStep = new URLSearchParams(window.location.search).get('step');
-    const stepOrder = ['welcome', 'nodered', 'partdb', 'mariadb', 'database', 'final'];
+    const stepOrder = ['welcome', 'nodered', 'partdb', 'mariadb', 'database', 'migrate', 'final'];
     const currentIndex = stepOrder.indexOf(currentStep);
     
     if (currentIndex > 0) {

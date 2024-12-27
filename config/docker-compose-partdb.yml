@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  partdb:
+    container_name: partdb
+    ports:
+      - '8036:80'
+    volumes:
+      - ./partdb/uploads:/var/www/html/uploads
+      - ./partdb/data:/var/www/html/public/media
+      - ./partdb/var/db:/var/www/html/var/db
+    restart: unless-stopped
+    image: jbtronics/part-db1:latest
+    environment:
+      DATABASE_URL: sqlite:///%kernel.project_dir%/var/db/app.db
+      APP_ENV: docker
+      DEFAULT_LANG: de
+      DEFAULT_TIMEZONE: Europe/Berlin
+      BASE_CURRENCY: EUR
+      INSTANCE_NAME: Pick'n'Light
+      ALLOW_ATTACHMENT_DOWNLOADS: 0
+      USE_GRAVATAR: 0
+      BANNER: Pick´n´Light<br>This will get you sorted
+      TRUSTED_PROXIES: 0.0.0.0/0
+      
+    networks:
+      - picknlight
+
+networks:
+  picknlight:
+    external: true 

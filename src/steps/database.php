@@ -76,13 +76,21 @@
 
     <!-- Migration Status Container -->
     <div class="migration-status" style="display: none;">
-        <div class="status-step" id="step-migrate-schema" data-status="waiting">
+        <div class="status-step" id="step-stop-partdb" data-status="waiting">
             <span class="status-icon">⭕</span>
-            <span class="status-text">Creating Part-DB schema...</span>
+            <span class="status-text">Stopping Part-DB container...</span>
         </div>
-        <div class="status-step" id="step-migrate-data" data-status="waiting">
+        <div class="status-step" id="step-update-config" data-status="waiting">
             <span class="status-icon">⭕</span>
-            <span class="status-text">Importing initial data...</span>
+            <span class="status-text">Updating database configuration...</span>
+        </div>
+        <div class="status-step" id="step-start-partdb" data-status="waiting">
+            <span class="status-icon">⭕</span>
+            <span class="status-text">Starting Part-DB container...</span>
+        </div>
+        <div class="status-step" id="step-migrate-db" data-status="waiting">
+            <span class="status-icon">⭕</span>
+            <span class="status-text">Migrating database...</span>
         </div>
     </div>
 
@@ -296,6 +304,9 @@ async function setupDatabase() {
         
         showSuccess('Database setup completed successfully!');
         
+        // Navigiere zum nächsten Schritt
+        navigateToStep('migrate');
+        
     } catch (error) {
         console.error('Error:', error);
         showError(error.message);
@@ -307,32 +318,31 @@ async function setupDatabase() {
 async function migratePartDB() {
     const migrateButton = document.getElementById('migrateButton');
     try {
-        migrateButton.textContent = 'Migrating...';
+        console.log('Starting Part-DB integration...');
         migrateButton.disabled = true;
         document.querySelector('.migration-status').style.display = 'block';
         
-        // Schema Migration
-        updateStatus('migrate-schema', 'pending');
-        const schemaResponse = await fetch('ajax/database_setup.php?step=migrate_partdb');
-        const schemaData = await schemaResponse.json();
-        if (!schemaData.success) {
-            throw new Error(schemaData.error || 'Failed to create Part-DB schema');
-        }
-        updateStatus('migrate-schema', 'success');
+        updateStatus('stop-partdb', 'pending');
+        updateStatus('update-config', 'pending');
+        updateStatus('start-partdb', 'pending');
+        updateStatus('migrate-db', 'pending');
         
-        // Data Migration
-        updateStatus('migrate-data', 'pending');
-        const dataResponse = await fetch('ajax/database_setup.php?step=import_data');
-        const dataData = await dataResponse.json();
-        if (!dataData.success) {
-            throw new Error(dataData.error || 'Failed to import initial data');
+        const response = await fetch('ajax/database_setup.php?step=migrate');
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to integrate Part-DB');
         }
-        updateStatus('migrate-data', 'success');
+        
+        updateStatus('stop-partdb', 'success');
+        updateStatus('update-config', 'success');
+        updateStatus('start-partdb', 'success');
+        updateStatus('migrate-db', 'success');
         
         migrateButton.textContent = 'Continue';
         migrateButton.disabled = false;
         migrateButton.onclick = () => navigateToStep('final');
-        showSuccess('Part-DB migration completed successfully!');
+        showSuccess('Part-DB integration completed successfully!');
         
     } catch (error) {
         console.error('Error:', error);

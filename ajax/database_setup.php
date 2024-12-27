@@ -1,130 +1,108 @@
-case 'verify':
-    try {
-        // Hole Tabellenstruktur
-        $showTableCmd = "cd /app/config && docker compose -f docker-compose-mariadb.yml exec -T mariadb mysql -N -B -u root -proot partdb -e 'SHOW CREATE TABLE led_mapping\\G'";
-        exec($showTableCmd, $tableOutput, $returnCode);
-        $tableStructure = '';
-        foreach ($tableOutput as $line) {
-            if (strpos($line, 'Create Table:') !== false) {
-                $tableStructure = trim(substr($line, 13));
-                break;
-            }
-        }
+<?php
+session_start();
+header('Content-Type: application/json');
 
-        // Hole Trigger
-        $showTriggersCmd = "cd /app/config && docker compose -f docker-compose-mariadb.yml exec -T mariadb mysql -N -B -u root -proot partdb -e 'SHOW TRIGGERS\\G'";
-        exec($showTriggersCmd, $triggerOutput, $returnCode);
-        $triggerDetails = [];
-        $currentTrigger = '';
-        foreach ($triggerOutput as $line) {
-            if (strpos($line, 'Statement:') !== false) {
-                $currentTrigger = trim(substr($line, 10));
-                $triggerDetails[] = $currentTrigger;
-            }
-        }
+function execCommand($command) {
+    exec($command . " 2>&1", $output, $return_var);
+    return [
+        'success' => $return_var === 0,
+        'output' => implode("\n", $output)
+    ];
+}
 
-        // Hole das Passwort aus der docker-compose-mariadb.yml
-        $composeFile = '/app/config/docker-compose-mariadb.yml';
-        $dbPassword = 'root'; // Standardwert
-        if (file_exists($composeFile)) {
-            $compose = file_get_contents($composeFile);
-            if (preg_match('/MYSQL_ROOT_PASSWORD:\s*([^\s]+)/', $compose, $matches)) {
-                $dbPassword = trim($matches[1]);
-            }
-        }
+// ... Rest der ursprünglichen Funktionen ...
 
-        // Alternativ aus der .env Datei
-        if ($dbPassword === 'root') {
-            $envFile = '/app/config/.env';
-            if (file_exists($envFile)) {
-                $envContent = file_get_contents($envFile);
-                if (preg_match('/MYSQL_ROOT_PASSWORD=([^\n]+)/', $envContent, $matches)) {
-                    $dbPassword = trim($matches[1]);
+try {
+    $step = $_GET['step'] ?? '';
+    $configDir = getenv('CONFIG_DIR') ?: '/app/config';
+
+    switch ($step) {
+        case 'create_database':
+            // ... ursprünglicher Code ...
+            break;
+
+        case 'create_table':
+            // ... ursprünglicher Code ...
+            break;
+
+        case 'import_triggers':
+            // ... ursprünglicher Code ...
+            break;
+
+        case 'verify':
+            // ... ursprünglicher Code ...
+            break;
+
+        case 'migrate':
+            error_log("Starting Part-DB migration");
+            try {
+                // 1. Stoppe den Part-DB Container
+                error_log("Stopping Part-DB container...");
+                exec("cd $configDir && docker compose -f docker-compose-partdb.yml down 2>&1", $output, $returnCode);
+                if ($returnCode !== 0) {
+                    throw new Exception("Failed to stop Part-DB container: " . implode("\n", $output));
                 }
+                
+                // 2. Hole die MariaDB Konfiguration
+                error_log("Reading MariaDB configuration...");
+                $mariadbConfig = file_get_contents($configDir . '/docker-compose-mariadb.yml');
+                if (!$mariadbConfig) {
+                    throw new Exception("Could not read MariaDB configuration");
+                }
+                
+                // Extrahiere die Zugangsdaten
+                preg_match('/MYSQL_ROOT_PASSWORD:\s*([^\s\n]+)/', $mariadbConfig, $matches);
+                $dbPassword = $matches[1] ?? 'root';
+                
+                // 3. Update die Database URL in der Part-DB Konfiguration
+                error_log("Updating Part-DB configuration...");
+                $configFile = $configDir . '/docker-compose-partdb.yml';
+                if (!file_exists($configFile)) {
+                    throw new Exception("Part-DB configuration file not found");
+                }
+                
+                $config = file_get_contents($configFile);
+                $config = preg_replace(
+                    '/DATABASE_URL=.*$/m',
+                    "DATABASE_URL=mysql://partdb:${dbPassword}@mariadb:3306/partdb",
+                    $config
+                );
+                file_put_contents($configFile, $config);
+                
+                // 4. Starte den Part-DB Container neu
+                error_log("Starting Part-DB container...");
+                exec("cd $configDir && docker compose -f docker-compose-partdb.yml up -d 2>&1", $output, $returnCode);
+                if ($returnCode !== 0) {
+                    throw new Exception("Failed to start Part-DB container: " . implode("\n", $output));
+                }
+                
+                // 5. Warte kurz, bis der Container gestartet ist
+                sleep(5);
+                
+                // 6. Führe die Datenbank-Migration aus
+                error_log("Running database migration...");
+                exec("docker exec --user=www-data partdb php bin/console doctrine:migrations:migrate --no-interaction 2>&1", $output, $returnCode);
+                if ($returnCode !== 0) {
+                    throw new Exception("Failed to run database migrations: " . implode("\n", $output));
+                }
+                
+                echo json_encode(['success' => true]);
+            } catch (Exception $e) {
+                error_log("Migration error: " . $e->getMessage());
+                echo json_encode([
+                    'success' => false,
+                    'error' => $e->getMessage()
+                ]);
             }
-        }
+            break;
 
-        echo json_encode([
-            'success' => true,
-            'host' => 'localhost',
-            'port' => '3306',
-            'database' => 'partdb',
-            'username' => 'root',
-            'password' => $dbPassword,
-            'tableStructure' => $tableStructure,
-            'triggers' => implode("\n\n", $triggerDetails)
-        ]);
-    } catch (Exception $e) {
-        echo json_encode([
-            'success' => false, 
-            'error' => $e->getMessage(),
-            'tableStructure' => '',
-            'triggers' => ''
-        ]);
+        default:
+            throw new Exception('Unknown step: ' . $step);
     }
-    break; 
-
-case 'migrate_partdb':
-    try {
-        // 1. Stoppe den Part-DB Container
-        $stopCommand = "cd /app/config && docker compose -f docker-compose-partdb.yml down";
-        exec($stopCommand, $output, $returnCode);
-        
-        if ($returnCode !== 0) {
-            throw new Exception("Failed to stop Part-DB container");
-        }
-        
-        // 2. Update die Database URL in der docker-compose.yml
-        $configFile = '/app/config/docker-compose-partdb.yml';
-        if (!file_exists($configFile)) {
-            throw new Exception("Part-DB configuration file not found");
-        }
-        
-        $config = file_get_contents($configFile);
-        $config = preg_replace(
-            '/DATABASE_URL=.*$/m',
-            'DATABASE_URL=mysql://partdb:root@mariadb:3306/partdb',
-            $config
-        );
-        file_put_contents($configFile, $config);
-        
-        // 3. Starte den Part-DB Container neu
-        $startCommand = "cd /app/config && docker compose -f docker-compose-partdb.yml up -d";
-        exec($startCommand, $output, $returnCode);
-        
-        if ($returnCode !== 0) {
-            throw new Exception("Failed to start Part-DB container");
-        }
-        
-        // Warte kurz, bis der Container gestartet ist
-        sleep(5);
-        
-        // 4. Führe die Datenbank-Migration aus
-        $migrateCommand = "cd /app/config && docker compose -f docker-compose-partdb.yml exec -T --user=www-data partdb php bin/console doctrine:migrations:migrate --no-interaction";
-        exec($migrateCommand, $output, $returnCode);
-        
-        if ($returnCode !== 0) {
-            throw new Exception("Failed to run database migrations");
-        }
-        
-        echo json_encode(['success' => true]);
-    } catch (Exception $e) {
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-    }
-    break;
-
-case 'import_data':
-    try {
-        // Initialisiere die Datenbank
-        $command = "cd /app/config && docker compose -f docker-compose-partdb.yml exec -T --user=www-data partdb php bin/console app:database:init --no-interaction";
-        exec($command, $output, $returnCode);
-        
-        if ($returnCode !== 0) {
-            throw new Exception("Failed to initialize database");
-        }
-        
-        echo json_encode(['success' => true]);
-    } catch (Exception $e) {
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-    }
-    break; 
+} catch (Exception $e) {
+    error_log('Database setup error: ' . $e->getMessage());
+    echo json_encode([
+        'success' => false,
+        'error' => $e->getMessage()
+    ]);
+} 

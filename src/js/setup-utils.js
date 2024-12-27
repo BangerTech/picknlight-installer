@@ -56,4 +56,17 @@ function showError(message) {
             errorDiv.remove();
         }, 300);
     }, 5000);
+}
+
+function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    const button = input.nextElementSibling;
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        button.innerHTML = '🔒';  // Geschlossenes Schloss wenn Passwort sichtbar
+    } else {
+        input.type = 'password';
+        button.innerHTML = '👁️';  // Auge wenn Passwort verborgen
+    }
 } 

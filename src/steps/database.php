@@ -1,3 +1,42 @@
+<?php
+// Lese die MariaDB-Konfiguration
+$configFile = '/app/config/docker-compose-mariadb.yml';
+$mariadbPassword = '';
+
+error_log("Trying to read config file: " . $configFile);
+
+if (file_exists($configFile)) {
+    $content = file_get_contents($configFile);
+    error_log("File content: " . $content);
+    
+    // Suche nach verschiedenen möglichen Formaten
+    $patterns = [
+        '/MYSQL_ROOT_PASSWORD=([^\s\n]+)/m',      // MYSQL_ROOT_PASSWORD=value
+        '/MYSQL_ROOT_PASSWORD:\s*([^\s\n]+)/m',   // MYSQL_ROOT_PASSWORD: value
+        '/- MYSQL_ROOT_PASSWORD=([^\s\n]+)/m',    // - MYSQL_ROOT_PASSWORD=value
+        '/MARIADB_ROOT_PASSWORD=([^\s\n]+)/m',    // Für Kompatibilität
+        '/MARIADB_ROOT_PASSWORD:\s*([^\s\n]+)/m'  // Für Kompatibilität
+    ];
+    
+    foreach ($patterns as $pattern) {
+        if (preg_match($pattern, $content, $matches)) {
+            $mariadbPassword = trim($matches[1]);
+            error_log("Found password using pattern: " . $pattern);
+            error_log("Password found: " . $mariadbPassword);
+            break;
+        }
+    }
+    
+    if (empty($mariadbPassword)) {
+        error_log("No password found in config using any pattern");
+    }
+} else {
+    error_log("Config file not found at: " . $configFile);
+}
+
+error_log("Final password value: " . $mariadbPassword);
+?>
+
 <div class="database-step">
     <h2>Database Setup</h2>
     
@@ -35,23 +74,35 @@
                 <div class="info-grid">
                     <div class="info-item">
                         <label>Host:</label>
-                        <span id="dbHost"></span>
+                        <span id="dbHost">localhost</span>
                     </div>
                     <div class="info-item">
                         <label>Port:</label>
-                        <span id="dbPort"></span>
+                        <span id="dbPort">3306</span>
                     </div>
                     <div class="info-item">
                         <label>Database:</label>
-                        <span id="dbName"></span>
+                        <span id="dbName">partdb</span>
                     </div>
                     <div class="info-item">
                         <label>Username:</label>
-                        <span id="dbUser"></span>
+                        <span id="dbUser">partdb</span>
                     </div>
                     <div class="info-item">
                         <label>Password:</label>
-                        <span id="dbPass"></span>
+                        <div class="password-field">
+                            <input type="password" 
+                                   id="dbPass" 
+                                   class="form-control" 
+                                   value="<?php echo htmlspecialchars($mariadbPassword); ?>" 
+                                   readonly>
+                            <button type="button" 
+                                    class="password-toggle" 
+                                    onclick="togglePassword('dbPass')" 
+                                    aria-label="Toggle password visibility">
+                                👁️
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

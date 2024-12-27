@@ -686,4 +686,51 @@ select.form-control {
 .status-text {
     color: var(--text-color);
     flex: 1;
+}
+
+/* Password Field Styling */
+.password-field {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.password-field .form-control {
+    padding-right: 40px;
+    font-family: monospace;
+    font-size: 14px;
+    color: var(--primary-color);
+    background: var(--background-color);
+}
+
+.password-toggle {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    color: var(--text-color);
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.password-toggle:hover {
+    opacity: 1;
+}
+
+/* Anpassung für die Info-Grid Password-Anzeige */
+.info-item .password-field .form-control {
+    height: 36px;
+    margin: 0;
+}
+
+.info-item .password-field .password-toggle {
+    height: 28px;
+    width: 28px;
 } 

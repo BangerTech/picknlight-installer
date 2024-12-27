@@ -32,7 +32,7 @@ $step_data = $steps[$current_step];
 <body>
     <div class="container">
         <div class="setup-header">
-            <h1>Pick'n'Light Setup</h1>
+            <img src="images/logo.png" alt="Pick'n'Light Logo" class="logo">
         </div>
         
         <div class="progress-bar">
@@ -52,6 +52,12 @@ $step_data = $steps[$current_step];
                     <?php echo $steps[$step]['title']; ?>
                 </div>
             <?php endforeach; ?>
+            
+            <!-- Theme Switcher in der Tab-Leiste -->
+            <div class="theme-switch">
+                <button id="lightTheme" title="Light Mode">☀️</button>
+                <button id="darkTheme" title="Dark Mode">🌙</button>
+            </div>
         </div>
 
         <div class="content">
@@ -63,6 +69,7 @@ $step_data = $steps[$current_step];
         // Definiere die Schritte global für die Navigation
         const stepOrder = <?php echo json_encode($stepOrder); ?>;
     </script>
+    <script src="js/theme.js"></script>
     <script src="js/navigation.js"></script>
     <script src="js/setup.js"></script>
 </body>

@@ -171,54 +171,40 @@ try {
             try {
                 error_log("Starting trigger import process...");
                 
-                // Prüfe, ob die Trigger-Datei existiert
-                $triggerFile = __DIR__ . "/../sql/triggers.sql";
-                if (!file_exists($triggerFile)) {
-                    error_log("Trigger file not found at: $triggerFile");
-                    throw new Exception("Trigger file not found");
+                // Pfade zu den Trigger-Dateien
+                $triggerFiles = [
+                    __DIR__ . '/../sql/triggers/Trigger_assign_led_after_insert.sql',
+                    __DIR__ . '/../sql/triggers/Trigger_delete_led_mapping_after_part_delete.sql'
+                ];
+                
+                foreach ($triggerFiles as $triggerFile) {
+                    if (!file_exists($triggerFile)) {
+                        error_log("Trigger file not found at: $triggerFile");
+                        throw new Exception("Trigger file not found: $triggerFile");
+                    }
+                    
+                    // Trigger-Datei in den Container kopieren
+                    $basename = basename($triggerFile);
+                    $copyCommand = "docker cp $triggerFile mariadb:/tmp/$basename";
+                    $result = execCommand($copyCommand);
+                    if (!$result['success']) {
+                        throw new Exception('Failed to copy trigger file: ' . $result['output']);
+                    }
+                    
+                    // Trigger importieren
+                    $importCommand = "cd $configDir && docker compose -f docker-compose-mariadb.yml exec -T mariadb bash -c 'cat /tmp/$basename | mariadb -h 127.0.0.1 -u root -proot partdb'";
+                    $result = execCommand($importCommand);
+                    if (!$result['success']) {
+                        throw new Exception('Failed to import trigger: ' . $result['output']);
+                    }
+                    
+                    // Aufräumen
+                    execCommand("cd $configDir && docker compose -f docker-compose-mariadb.yml exec -T mariadb rm /tmp/$basename");
                 }
-                error_log("Found trigger file at: $triggerFile");
                 
-                // Trigger-Dateien in den Container kopieren
-                $copyCommand = "docker cp $triggerFile mariadb:/tmp/triggers.sql";
-                error_log("Executing copy command: $copyCommand");
-                $result = execCommand($copyCommand);
-                if (!$result['success']) {
-                    error_log("Failed to copy triggers file: " . $result['output']);
-                    throw new Exception('Failed to copy triggers file: ' . $result['output']);
-                }
-                error_log("Successfully copied trigger file to container");
-                
-                // Trigger importieren
-                $importCommand = "cd $configDir && docker compose -f docker-compose-mariadb.yml exec -T mariadb bash -c 'cat /tmp/triggers.sql | mariadb -h 127.0.0.1 -u root -proot partdb'";
-                error_log("Executing import command: $importCommand");
-                $result = execCommand($importCommand);
-                if (!$result['success']) {
-                    error_log("Failed to import triggers: " . $result['output']);
-                    throw new Exception('Failed to import triggers: ' . $result['output']);
-                }
-                error_log("Successfully imported triggers");
-                
-                // Überprüfe die erstellten Trigger
-                $verifyCommand = "cd $configDir && docker compose -f docker-compose-mariadb.yml exec -T mariadb mariadb -h 127.0.0.1 -u root -proot partdb -e 'SHOW TRIGGERS'";
-                error_log("Verifying triggers with command: $verifyCommand");
-                $result = execCommand($verifyCommand);
-                if (!$result['success']) {
-                    error_log("Failed to verify triggers: " . $result['output']);
-                    throw new Exception('Failed to verify triggers: ' . $result['output']);
-                }
-                error_log("Trigger verification output: " . $result['output']);
-                
-                // Aufräumen
-                $cleanupCommand = "cd $configDir && docker compose -f docker-compose-mariadb.yml exec -T mariadb rm /tmp/triggers.sql";
-                error_log("Cleaning up with command: $cleanupCommand");
-                execCommand($cleanupCommand);
-                
-                error_log("Trigger import process completed successfully");
                 echo json_encode(['success' => true]);
                 
             } catch (Exception $e) {
-                error_log("Trigger import failed with error: " . $e->getMessage());
                 echo json_encode([
                     'success' => false,
                     'error' => $e->getMessage()
@@ -229,17 +215,14 @@ try {
         case 'verify':
             try {
                 // Hole die tatsächliche Tabellenstruktur
-                $result = execCommand("cd $configDir && docker compose -f docker-compose-mariadb.yml exec -T mariadb mariadb -h 127.0.0.1 -u root -proot partdb -e 'SHOW CREATE TABLE led_mapping\\G' 2>/dev/null");
+                $result = execCommand("cd $configDir && docker compose -f docker-compose-mariadb.yml exec -T mariadb mariadb -h 127.0.0.1 -u root -proot partdb -e 'DESCRIBE led_mapping' 2>/dev/null");
                 if (!$result['success']) {
                     throw new Exception('Failed to get table structure: ' . $result['output']);
                 }
-                
-                // Extrahiere CREATE TABLE Statement
-                preg_match('/Create Table: (CREATE TABLE.*?;)/s', $result['output'], $matches);
-                $tableStructure = $matches[1] ?? 'Table structure not available';
+                $tableStructure = $result['output'];
                 
                 // Hole die Trigger
-                $result = execCommand("cd $configDir && docker compose -f docker-compose-mariadb.yml exec -T mariadb mariadb -h 127.0.0.1 -u root -proot partdb -e 'SHOW CREATE TRIGGER before_insert_led_mapping; SHOW CREATE TRIGGER before_update_led_mapping;' 2>/dev/null");
+                $result = execCommand("cd $configDir && docker compose -f docker-compose-mariadb.yml exec -T mariadb mariadb -h 127.0.0.1 -u root -proot partdb -e 'SHOW CREATE TRIGGER assign_led_after_insert; SHOW CREATE TRIGGER delete_led_mapping_after_part_delete;' 2>/dev/null");
                 if (!$result['success']) {
                     throw new Exception('Failed to get triggers: ' . $result['output']);
                 }

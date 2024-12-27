@@ -27,12 +27,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function getCurrentStep() {
     const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('step') || 'welcome';
+    return urlParams.get('step') || stepOrder[0];
 }
 
 function navigateToStep(step) {
-    console.log('Navigating to step:', step);
-    window.location.href = `index.php?step=${step}`;
+    if (stepOrder.includes(step)) {
+        window.location.href = `index.php?step=${step}`;
+    }
 }
 
 function nextStep() {
@@ -46,10 +47,11 @@ function nextStep() {
 
 function previousStep() {
     const currentStep = getCurrentStep();
-    const currentIndex = window.stepOrder.indexOf(currentStep);
+    const currentIndex = stepOrder.indexOf(currentStep);
     
     if (currentIndex > 0) {
-        navigateToStep(window.stepOrder[currentIndex - 1]);
+        const previousStep = stepOrder[currentIndex - 1];
+        window.location.href = `index.php?step=${previousStep}`;
     }
 }
 

@@ -22,9 +22,10 @@
 
 /* Container Styling */
 .container {
-    max-width: 900px;
+    position: relative;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 12px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -265,8 +266,9 @@ body {
     background: var(--card-background);
     border-radius: 12px;
     box-shadow: var(--shadow);
-    margin: 20px auto;
+    margin: 0 auto 20px;
     width: calc(100% - 40px);
+    position: relative;
 }
 
 .logo {

@@ -27,8 +27,16 @@ RUN a2enmod rewrite
 # Configure Apache
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
+# Copy Apache configuration
+COPY src/000-default.conf /etc/apache2/sites-available/000-default.conf
+
+# Create necessary directories
+RUN mkdir -p /var/www/html/src/steps
+
 # Copy application files
-COPY ./src/ /var/www/html/
+COPY ./src/ /var/www/html/src/
+
+# Copy docker-entrypoint.sh
 COPY src/docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 

@@ -1,15 +1,22 @@
 <?php
 session_start();
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// Define step order FIRST
+$stepOrder = ['welcome', 'nodered', 'partdb', 'mariadb', 'database', 'migrate', 'final'];
 
 // Get current step from URL parameter or default to 'welcome'
 $current_step = $_GET['step'] ?? 'welcome';
 
+// Definition der Steps
 $steps = [
     'welcome' => ['title' => 'Welcome', 'file' => 'steps/welcome.php'],
     'nodered' => ['title' => 'Node-RED', 'file' => 'steps/nodered.php'],
     'partdb' => ['title' => 'Part-DB', 'file' => 'steps/partdb.php'],
     'mariadb' => ['title' => 'MariaDB', 'file' => 'steps/mariadb.php'],
     'database' => ['title' => 'Database', 'file' => 'steps/database.php'],
+    'migrate' => ['title' => 'Migration', 'file' => 'steps/migrate.php'],
     'final' => ['title' => 'Finish', 'file' => 'steps/final.php']
 ];
 
@@ -41,7 +48,6 @@ $step_data = $steps[$current_step];
         <div class="progress-bar">
             <div class="steps-container">
                 <?php 
-                $stepOrder = ['welcome', 'nodered', 'partdb', 'mariadb', 'database', 'final'];
                 $currentIndex = array_search($current_step, $stepOrder);
                 
                 foreach ($stepOrder as $index => $step): 

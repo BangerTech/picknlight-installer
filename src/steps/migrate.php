@@ -1,7 +1,7 @@
 <div class="migrate-step">
     <h2>Part-DB Migration</h2>
     
-    <div class="migration-status" style="margin: 30px 0;">
+    <div class="migration-status">
         <div class="status-step" id="step-stop-partdb" data-status="waiting">
             <span class="status-icon">⭕</span>
             <span class="status-text">Stopping Part-DB container...</span>
@@ -26,54 +26,6 @@
     </div>
 </div>
 
-<style>
-.migrate-step {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-.migration-status {
-    background: var(--card-background);
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: var(--shadow);
-}
-
-.status-step {
-    display: flex;
-    align-items: center;
-    margin: 10px 0;
-    padding: 12px;
-    background: var(--background-color);
-    border-radius: 8px;
-    transition: all 0.3s ease;
-}
-
-.status-icon {
-    margin-right: 15px;
-    font-size: 20px;
-}
-
-.status-text {
-    color: var(--text-color);
-    flex: 1;
-}
-
-.button-group {
-    margin-top: 30px;
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-}
-
-h2 {
-    color: var(--text-color);
-    text-align: center;
-    margin-bottom: 30px;
-}
-</style>
-
 <script>
 async function migratePartDB() {
     const migrateButton = document.getElementById('migrateButton');
@@ -81,6 +33,7 @@ async function migratePartDB() {
         console.log('Starting Part-DB integration...');
         migrateButton.disabled = true;
         
+        // Set all steps to pending
         updateStatus('stop-partdb', 'pending');
         updateStatus('update-config', 'pending');
         updateStatus('start-partdb', 'pending');
@@ -92,10 +45,18 @@ async function migratePartDB() {
         if (!data.success) {
             throw new Error(data.error || 'Failed to integrate Part-DB');
         }
-        
+
+        // Update status steps one by one with a delay
+        await new Promise(resolve => setTimeout(resolve, 500));
         updateStatus('stop-partdb', 'success');
+        
+        await new Promise(resolve => setTimeout(resolve, 500));
         updateStatus('update-config', 'success');
+        
+        await new Promise(resolve => setTimeout(resolve, 500));
         updateStatus('start-partdb', 'success');
+        
+        await new Promise(resolve => setTimeout(resolve, 500));
         updateStatus('migrate-db', 'success');
         
         migrateButton.textContent = 'Continue';
@@ -103,11 +64,20 @@ async function migratePartDB() {
         migrateButton.onclick = () => navigateToStep('final');
         showSuccess('Part-DB integration completed successfully!');
         
+        if (data.details) {
+            console.log('Migration details:', data.details);
+        }
+        
     } catch (error) {
         console.error('Error:', error);
         showError(error.message);
-        migrateButton.textContent = 'Migrate to Part-DB';
+        migrateButton.textContent = 'Retry Migration';
         migrateButton.disabled = false;
+        
+        // Mark all pending steps as failed
+        document.querySelectorAll('.status-step[data-status="pending"]').forEach(step => {
+            step.setAttribute('data-status', 'error');
+        });
     }
 }
 </script> 

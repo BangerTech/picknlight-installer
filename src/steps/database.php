@@ -298,14 +298,14 @@ async function setupDatabase() {
         
         // UI-Updates
         setupButton.style.display = 'none';
-        migrateButton.style.display = 'inline-block';
         document.querySelector('.database-info').style.display = 'block';
         showTab('connection');
         
+        // Ändere den Button zu einem Continue-Button
+        migrateButton.style.display = 'inline-block';
+        migrateButton.textContent = 'Continue';
+        migrateButton.onclick = () => navigateToStep('migrate');
         showSuccess('Database setup completed successfully!');
-        
-        // Navigiere zum nächsten Schritt
-        navigateToStep('migrate');
         
     } catch (error) {
         console.error('Error:', error);

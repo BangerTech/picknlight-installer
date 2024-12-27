@@ -24,19 +24,19 @@
     </form>
 
     <div class="setup-status">
-        <div class="status-step" id="step-config">
+        <div class="status-step" id="step-config" data-status="waiting">
             <span class="status-icon">⭕</span>
             <span class="status-text">Saving configuration...</span>
         </div>
-        <div class="status-step" id="step-directories">
+        <div class="status-step" id="step-directories" data-status="waiting">
             <span class="status-icon">⭕</span>
             <span class="status-text">Creating directories...</span>
         </div>
-        <div class="status-step" id="step-container">
+        <div class="status-step" id="step-container" data-status="waiting">
             <span class="status-icon">⭕</span>
             <span class="status-text">Starting Node-RED container...</span>
         </div>
-        <div class="status-step" id="step-nodes">
+        <div class="status-step" id="step-nodes" data-status="waiting">
             <span class="status-icon">⭕</span>
             <span class="status-text">Installing required nodes...</span>
         </div>
@@ -44,8 +44,7 @@
 
     <div class="button-group">
         <button class="button previous" onclick="previousStep()">Back</button>
-        <button class="button install" onclick="installNodeRed()">Install Node-RED</button>
-        <button class="button next" onclick="navigateToStep('partdb')" style="display: none;">Continue</button>
+        <button class="button primary" id="actionButton" onclick="installNodeRed()">Install Node-RED</button>
     </div>
 </div>
 
@@ -66,6 +65,8 @@ async function updateStatus(step, status, message = null) {
         textElement.textContent = message;
     }
     
+    statusStep.setAttribute('data-status', status);
+    
     switch (status) {
         case 'pending':
             icon.textContent = '⏳';
@@ -82,8 +83,10 @@ async function updateStatus(step, status, message = null) {
 }
 
 async function installNodeRed() {
+    const actionButton = document.getElementById('actionButton');
     try {
-        document.querySelector('.button.install').disabled = true;
+        actionButton.textContent = 'Installing...';
+        actionButton.disabled = true;
         document.querySelector('.setup-status').style.display = 'block';
         
         const steps = ['config', 'directories', 'container', 'nodes'];
@@ -140,24 +143,32 @@ async function installNodeRed() {
         }
         
         steps.forEach(step => updateStatus(step, 'success'));
+        actionButton.textContent = 'Continue';
+        actionButton.disabled = false;
+        actionButton.onclick = () => navigateToStep('partdb');
         showSuccess('Node-RED installed successfully!');
-        document.querySelector('.button.install').style.display = 'none';
-        document.querySelector('.button.next').style.display = 'inline-block';
         
     } catch (error) {
         console.error('Error:', error);
         showError(error.message);
-        document.querySelector('.button.install').disabled = false;
+        actionButton.textContent = 'Install Node-RED';
+        actionButton.disabled = false;
     }
 }
 
 function showSuccess(message) {
+    document.querySelectorAll('.success-message').forEach(el => el.remove());
+    
     const successDiv = document.createElement('div');
     successDiv.className = 'success-message';
     successDiv.textContent = message;
+    document.body.appendChild(successDiv);
     
-    document.querySelectorAll('.success-message, .error-message').forEach(el => el.remove());
-    
-    document.querySelector('.button-group').before(successDiv);
+    setTimeout(() => {
+        successDiv.classList.add('hiding');
+        setTimeout(() => {
+            successDiv.remove();
+        }, 300);
+    }, 5000);
 }
 </script> 

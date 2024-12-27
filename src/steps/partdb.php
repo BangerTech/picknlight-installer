@@ -17,49 +17,34 @@
         </div>
 
         <div class="form-group">
-            <label for="partdbPort">Local Port (default: 8034)</label>
+            <label for="partdbPort">Local Port (default: 8036)</label>
             <input type="number" id="partdbPort" name="partdbPort" 
-                   value="8034" class="form-control">
-        </div>
-
-        <div class="form-group">
-            <label for="instanceName">Instance Name</label>
-            <input type="text" id="instanceName" name="instanceName" 
-                   value="Pick'n'Light" class="form-control">
-        </div>
-
-        <div class="form-group">
-            <label for="defaultLang">Default Language</label>
-            <select id="defaultLang" name="defaultLang" class="form-control">
-                <option value="de">Deutsch</option>
-                <option value="en">English</option>
-            </select>
+                   value="8036" class="form-control">
         </div>
     </form>
 
-    <div class="setup-status" style="display: none;">
-        <div class="status-step">
+    <div class="setup-status">
+        <div class="status-step" id="step-config" data-status="waiting">
             <span class="status-icon">⭕</span>
             <span class="status-text">Saving configuration...</span>
         </div>
-        <div class="status-step">
+        <div class="status-step" id="step-directories" data-status="waiting">
             <span class="status-icon">⭕</span>
             <span class="status-text">Creating directories...</span>
         </div>
-        <div class="status-step">
+        <div class="status-step" id="step-container" data-status="waiting">
             <span class="status-icon">⭕</span>
-            <span class="status-text">Starting containers...</span>
+            <span class="status-text">Starting Part-DB container...</span>
         </div>
-        <div class="status-step">
+        <div class="status-step" id="step-database" data-status="waiting">
             <span class="status-icon">⭕</span>
-            <span class="status-text">Initializing database...</span>
+            <span class="status-text">Setting up database...</span>
         </div>
     </div>
 
     <div class="button-group">
         <button class="button previous" onclick="previousStep()">Back</button>
-        <button class="button install" onclick="installPartDB()">Install Part-DB</button>
-        <button class="button next" onclick="navigateToStep('mariadb')" style="display: none;">Continue</button>
+        <button class="button primary" id="actionButton" onclick="installPartDB()">Install Part-DB</button>
     </div>
 </div>
 
@@ -69,159 +54,71 @@ document.getElementById('useTraefik').addEventListener('change', function() {
     traefikOptions.style.display = this.value === '1' ? 'block' : 'none';
 });
 
-async function updateStatus(step, status, message = null) {
-    const statusSteps = document.querySelectorAll('.status-step');
-    const statusStep = statusSteps[step];
-    const icon = statusStep.querySelector('.status-icon');
-    
-    if (message) {
-        statusStep.querySelector('.status-text').textContent = message;
-    }
-    
-    switch (status) {
-        case 'pending':
-            icon.textContent = '⏳';
-            break;
-        case 'success':
-            icon.textContent = '✅';
-            break;
-        case 'error':
-            icon.textContent = '❌';
-            break;
-        default:
-            icon.textContent = '⭕';
-    }
-}
-
 async function installPartDB() {
+    const actionButton = document.getElementById('actionButton');
     try {
-        // Setup-Status anzeigen
+        actionButton.textContent = 'Installing...';
+        actionButton.disabled = true;
         document.querySelector('.setup-status').style.display = 'block';
-        document.querySelector('.button.install').disabled = true;
         
-        // 1. Konfiguration speichern
-        updateStatus(0, 'pending');
+        const steps = ['config', 'directories', 'container', 'database'];
+        steps.forEach(step => updateStatus(step, 'pending'));
+        
         const formData = new FormData(document.getElementById('partdbForm'));
         const saveResponse = await fetch('ajax/save_partdb_config.php', {
             method: 'POST',
             body: formData
         });
         
-        if (!saveResponse.ok) {
-            throw new Error(`HTTP error! status: ${saveResponse.status}`);
-        }
-        
-        let saveData;
-        try {
-            saveData = await saveResponse.json();
-        } catch (e) {
-            const text = await saveResponse.text();
-            console.error('Invalid JSON response:', text);
-            throw new Error('Server returned invalid JSON');
-        }
-        
+        const saveData = await saveResponse.json();
         if (!saveData.success) {
             throw new Error(saveData.error || 'Failed to save configuration');
         }
-        updateStatus(0, 'success');
+        updateStatus('config', 'success');
         
-        // 2. Container starten
-        updateStatus(1, 'pending');
-        const setupResponse = await fetch('ajax/setup_partdb.php');
+        const response = await fetch('ajax/setup_partdb.php');
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
         
-        if (!setupResponse.ok) {
-            throw new Error(`HTTP error! status: ${setupResponse.status}`);
+        while (true) {
+            const {value, done} = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value);
+            const updates = chunk.split('\n').filter(line => line.trim());
+            
+            for (const update of updates) {
+                try {
+                    if (!update.trim()) continue;
+                    const data = JSON.parse(update);
+                    if (data.status) {
+                        const currentStep = data.status.step;
+                        for (let i = 0; i < steps.length; i++) {
+                            const step = steps[i];
+                            if (steps.indexOf(step) < steps.indexOf(currentStep)) {
+                                updateStatus(step, 'success');
+                            } else if (step === currentStep) {
+                                updateStatus(step, 'pending', data.progress || null);
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error('Failed to parse update:', e, 'Content:', update);
+                }
+            }
         }
         
-        let setupData;
-        try {
-            setupData = await setupResponse.json();
-        } catch (e) {
-            const text = await setupResponse.text();
-            console.error('Invalid JSON response:', text);
-            throw new Error('Server returned invalid JSON');
-        }
-        
-        if (!setupData.success) {
-            throw new Error(setupData.error || 'Failed to start Part-DB');
-        }
-        updateStatus(1, 'success');
-        
-        // 3. Container-Status prüfen
-        updateStatus(2, 'pending', 'Waiting for services to start...');
-        await new Promise(resolve => setTimeout(resolve, 5000)); // Warte 5 Sekunden
-        const checkResponse = await fetch('ajax/check_partdb.php');
-        
-        if (!checkResponse.ok) {
-            throw new Error(`HTTP error! status: ${checkResponse.status}`);
-        }
-        
-        let checkData;
-        try {
-            checkData = await checkResponse.json();
-        } catch (e) {
-            const text = await checkResponse.text();
-            console.error('Invalid JSON response:', text);
-            throw new Error('Server returned invalid JSON');
-        }
-        
-        if (!checkData.success) {
-            throw new Error(checkData.error || 'Part-DB is not running properly');
-        }
-        updateStatus(2, 'success');
-        
-        // 4. Datenbank-Initialisierung prüfen
-        updateStatus(3, 'pending', 'Waiting for database initialization...');
-        await new Promise(resolve => setTimeout(resolve, 5000)); // Warte 5 Sekunden
-        const initResponse = await fetch('ajax/check_partdb.php');
-        
-        if (!initResponse.ok) {
-            throw new Error(`HTTP error! status: ${initResponse.status}`);
-        }
-        
-        let initData;
-        try {
-            initData = await initResponse.json();
-        } catch (e) {
-            const text = await initResponse.text();
-            console.error('Invalid JSON response:', text);
-            throw new Error('Server returned invalid JSON');
-        }
-        
-        if (!initData.success) {
-            throw new Error(initData.error || 'Failed to initialize database');
-        }
-        updateStatus(3, 'success');
-        
-        // Setup erfolgreich
-        showSuccess('Part-DB setup completed successfully!');
-        document.querySelector('.button.install').style.display = 'none';
-        document.querySelector('.button.next').style.display = 'inline-block';
+        steps.forEach(step => updateStatus(step, 'success'));
+        showSuccess('Part-DB installed successfully!');
+        actionButton.textContent = 'Continue';
+        actionButton.disabled = false;
+        actionButton.onclick = () => navigateToStep('mariadb');
         
     } catch (error) {
         console.error('Error:', error);
         showError(error.message);
-        document.querySelector('.button.install').disabled = false;
-        
-        // Zeige Fehler im Status an
-        const statusSteps = document.querySelectorAll('.status-step');
-        for (let i = 0; i < statusSteps.length; i++) {
-            const icon = statusSteps[i].querySelector('.status-icon');
-            if (icon.textContent === '⏳') {
-                icon.textContent = '❌';
-            }
-        }
+        actionButton.textContent = 'Install Part-DB';
+        actionButton.disabled = false;
     }
-}
-
-function showSuccess(message) {
-    const successDiv = document.createElement('div');
-    successDiv.className = 'success-message';
-    successDiv.textContent = message;
-    
-    // Entferne vorherige Nachrichten
-    document.querySelectorAll('.success-message, .error-message').forEach(el => el.remove());
-    
-    document.querySelector('.button-group').before(successDiv);
 }
 </script> 

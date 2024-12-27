@@ -21,9 +21,7 @@ function getCurrentStep() {
 }
 
 function navigateToStep(step) {
-    if (stepOrder.includes(step)) {
-        window.location.href = `index.php?step=${step}`;
-    }
+    window.location.href = `index.php?step=${step}`;
 }
 
 function nextStep() {
@@ -36,11 +34,13 @@ function nextStep() {
 }
 
 function previousStep() {
-    const currentStep = getCurrentStep();
+    const currentStep = new URLSearchParams(window.location.search).get('step');
+    const stepOrder = ['welcome', 'nodered', 'partdb', 'mariadb', 'database', 'final'];
     const currentIndex = stepOrder.indexOf(currentStep);
     
     if (currentIndex > 0) {
-        navigateToStep(stepOrder[currentIndex - 1]);
+        const previousStep = stepOrder[currentIndex - 1];
+        window.location.href = `index.php?step=${previousStep}`;
     }
 }
 

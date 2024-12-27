@@ -504,4 +504,98 @@ select.form-control {
     gap: 8px;
     margin: 0 auto;
     flex-wrap: nowrap;
+}
+
+/* Status Step Animations */
+@keyframes rotate {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Pending Status Animation */
+.status-step .status-icon:has(span:contains("⏳")) {
+    animation: rotate 2s linear infinite;
+}
+
+/* Alternative falls :has nicht unterstützt wird */
+.status-step[data-status="pending"] .status-icon {
+    animation: rotate 2s linear infinite;
+}
+
+/* Pulse Animation für pending Status */
+@keyframes pulse {
+    0% {
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0.6;
+    }
+}
+
+.status-step[data-status="pending"] {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Success Message Styling */
+.success-message {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--success-color);
+    color: white;
+    padding: 16px 24px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(39, 174, 96, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 500;
+    opacity: 0;
+    animation: slideUpFade 0.3s ease forwards;
+    z-index: 1000;
+}
+
+.success-message::before {
+    content: '✓';
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+}
+
+@keyframes slideUpFade {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 20px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+    to {
+        opacity: 0;
+        transform: translate(-50%, 20px);
+    }
+}
+
+.success-message.hiding {
+    animation: fadeOut 0.3s ease forwards;
 } 

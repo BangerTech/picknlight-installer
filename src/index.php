@@ -69,6 +69,7 @@ $step_data = $steps[$current_step];
     </script>
     <script src="js/theme.js"></script>
     <script src="js/navigation.js"></script>
+    <script src="js/setup-utils.js"></script>
     <script src="js/setup.js"></script>
 </body>
 </html> 

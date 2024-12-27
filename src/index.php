@@ -30,33 +30,32 @@ $step_data = $steps[$current_step];
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+    <!-- Theme Switch Button außerhalb des Containers -->
+    <button class="theme-switch" id="themeToggle" aria-label="Toggle theme"></button>
+
     <div class="container">
         <div class="setup-header">
             <img src="images/logo.png" alt="Pick'n'Light Logo" class="logo">
         </div>
         
         <div class="progress-bar">
-            <?php 
-            $stepOrder = ['welcome', 'nodered', 'partdb', 'mariadb', 'database', 'final'];
-            $currentIndex = array_search($current_step, $stepOrder);
-            
-            foreach ($stepOrder as $index => $step): 
-                $stepClass = '';
-                if ($step === $current_step) {
-                    $stepClass = 'active';
-                } elseif ($index < $currentIndex) {
-                    $stepClass = 'completed';
-                }
-            ?>
-                <div class="step <?php echo $stepClass; ?>">
-                    <?php echo $steps[$step]['title']; ?>
-                </div>
-            <?php endforeach; ?>
-            
-            <!-- Theme Switcher in der Tab-Leiste -->
-            <div class="theme-switch">
-                <button id="lightTheme" title="Light Mode">☀️</button>
-                <button id="darkTheme" title="Dark Mode">🌙</button>
+            <div class="steps-container">
+                <?php 
+                $stepOrder = ['welcome', 'nodered', 'partdb', 'mariadb', 'database', 'final'];
+                $currentIndex = array_search($current_step, $stepOrder);
+                
+                foreach ($stepOrder as $index => $step): 
+                    $stepClass = '';
+                    if ($step === $current_step) {
+                        $stepClass = 'active';
+                    } elseif ($index < $currentIndex) {
+                        $stepClass = 'completed';
+                    }
+                ?>
+                    <div class="step <?php echo $stepClass; ?>">
+                        <?php echo $steps[$step]['title']; ?>
+                    </div>
+                <?php endforeach; ?>
             </div>
         </div>
 
@@ -66,7 +65,6 @@ $step_data = $steps[$current_step];
     </div>
     
     <script>
-        // Definiere die Schritte global für die Navigation
         const stepOrder = <?php echo json_encode($stepOrder); ?>;
     </script>
     <script src="js/theme.js"></script>
